@@ -9,7 +9,7 @@ export class ApiError extends Error {
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private base = environment.apiUrl;
+  private base = environment.apiUrl.replace(/\/+$/, '');
 
   async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const token = localStorage.getItem('nca_token');
