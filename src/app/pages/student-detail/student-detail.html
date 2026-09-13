@@ -167,10 +167,10 @@
                 <div class="state">No exams recorded yet.</div>
               } @else {
                 <p-table [value]="p.exams" [size]="'small'">
-                  <ng-template pTemplate="header">
+                  <ng-template #header>
                     <tr><th>Title</th><th>Subject</th><th>Score</th><th>%</th><th>Date</th></tr>
                   </ng-template>
-                  <ng-template pTemplate="body" let-e>
+                  <ng-template #body let-e>
                     <tr>
                       <td><strong>{{ e.title }}</strong></td>
                       <td>{{ e.subject }}</td>
@@ -228,10 +228,10 @@
                 <div class="state">No homework recorded yet.</div>
               } @else {
                 <p-table [value]="p.homeworks" [size]="'small'">
-                  <ng-template pTemplate="header">
+                  <ng-template #header>
                     <tr><th>Title</th><th>Points</th><th>%</th><th>Submitted</th><th>Feedback</th></tr>
                   </ng-template>
-                  <ng-template pTemplate="body" let-h>
+                  <ng-template #body let-h>
                     <tr>
                       <td><strong>{{ h.title }}</strong></td>
                       <td>{{ h.points }} / {{ h.maxPoints }}</td>
@@ -254,10 +254,10 @@
                 <div class="state">No payment records yet.</div>
               } @else {
                 <p-table [value]="p.payments" [size]="'small'">
-                  <ng-template pTemplate="header">
+                  <ng-template #header>
                     <tr><th>Month</th><th>Amount</th><th>Status</th><th>Paid on</th><th></th></tr>
                   </ng-template>
-                  <ng-template pTemplate="body" let-pay>
+                  <ng-template #body let-pay>
                     <tr>
                       <td><strong>{{ pay.month }}</strong></td>
                       <td>{{ pay.amount }} EGP</td>

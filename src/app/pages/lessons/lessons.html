@@ -49,7 +49,7 @@
       <label for="lPublished">Published — visible to students</label>
     </div>
   </div>
-  <ng-template pTemplate="footer">
+  <ng-template #footer>
     <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showAdd.set(false)" />
     <p-button [label]="adding ? 'Adding…' : 'Add lesson'" [loading]="adding" icon="pi pi-plus"
               (onClick)="addLesson()" [disabled]="!addTitle || !addVideo || !addModule" />
@@ -99,7 +99,7 @@
       <label for="ePublished">Published — visible to students</label>
     </div>
   </div>
-  <ng-template pTemplate="footer">
+  <ng-template #footer>
     <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showEdit.set(false)" />
     <p-button [label]="saving ? 'Saving…' : 'Save changes'" [loading]="saving" icon="pi pi-check"
               (onClick)="saveLesson()" [disabled]="!addTitle || !addVideo || !addModule" />
@@ -126,10 +126,10 @@
       </div>
       <p-table [value]="byModule(module)" [size]="'small'" [stripedRows]="true"
                [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]">
-        <ng-template pTemplate="header">
+        <ng-template #header>
           <tr><th style="width:48px">#</th><th>Title</th><th>Video ID</th><th>Status</th><th>Uploaded</th><th></th></tr>
         </ng-template>
-        <ng-template pTemplate="body" let-l>
+        <ng-template #body let-l>
           <tr>
             <td class="muted">{{ l.order }}</td>
             <td><strong>{{ l.title }}</strong></td>

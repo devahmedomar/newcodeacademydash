@@ -32,7 +32,7 @@
       </p-floatlabel>
     </div>
   </div>
-  <ng-template pTemplate="footer">
+  <ng-template #footer>
     <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showAdd.set(false)"/>
     <p-button [label]="adding ? 'Creating…' : 'Create account'" [loading]="adding"
               icon="pi pi-user-plus" (onClick)="addStudent()"
@@ -54,10 +54,10 @@
     } @else {
       <p-table [value]="students()" [size]="'small'" [stripedRows]="true" styleClass="students-table"
                [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" [showCurrentPageReport]="false">
-        <ng-template pTemplate="header">
+        <ng-template #header>
           <tr><th>Name</th><th>Email</th><th>Enrolled</th><th>Status</th><th></th></tr>
         </ng-template>
-        <ng-template pTemplate="body" let-s>
+        <ng-template #body let-s>
           <tr>
             <td>
               <span class="avatar" [class.text-primary]="true">{{ s.name[0] }}</span>
