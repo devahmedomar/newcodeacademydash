@@ -1,6 +1,16 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
-import { Student, Exam, Homework, Lesson, Payment, PaymentStatus, StudentProfile } from '../models';
+import {
+  Student,
+  Exam,
+  ExamTemplate,
+  ExamGradesResponse,
+  Homework,
+  Lesson,
+  Payment,
+  PaymentStatus,
+  StudentProfile,
+} from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class DataService {
@@ -18,12 +28,28 @@ export class DataService {
     return this.api.get<StudentProfile>(`/api/students/${id}`);
   }
 
-  createExam(body: Omit<Exam, '_id'>) {
-    return this.api.post<Exam>('/api/exams', body);
+  listExamTemplates() {
+    return this.api.get<ExamTemplate[]>('/api/exams');
   }
 
-  listExams() {
-    return this.api.get<Exam[]>('/api/exams');
+  createExamTemplate(body: { title: string; subject: string; maxGrade: number; date?: string }) {
+    return this.api.post<ExamTemplate>('/api/exams', body);
+  }
+
+  updateExamTemplate(id: string, body: { title: string; subject: string; maxGrade: number; date?: string }) {
+    return this.api.put<ExamTemplate>(`/api/exams/${id}`, body);
+  }
+
+  deleteExamTemplate(id: string) {
+    return this.api.delete<void>(`/api/exams/${id}`);
+  }
+
+  listExamGrades(examId: string) {
+    return this.api.get<ExamGradesResponse>(`/api/exams/${examId}/grades`);
+  }
+
+  upsertExamGrade(examId: string, studentId: string, grade: number) {
+    return this.api.put<Exam>(`/api/exams/${examId}/grades`, { studentId, grade });
   }
 
   createHomework(body: Omit<Homework, '_id'>) {

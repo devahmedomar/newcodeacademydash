@@ -4,12 +4,14 @@ import { Login } from './pages/login/login';
 import { Dashboard } from './pages/dashboard/dashboard';
 import { StudentDetail } from './pages/student-detail/student-detail';
 import { Lessons } from './pages/lessons/lessons';
+import { Exams } from './pages/exams/exams';
 
 export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'students', component: Dashboard, canActivate: [authGuard] },
   { path: 'students/:id', component: StudentDetail, canActivate: [authGuard] },
   { path: 'lessons', component: Lessons, canActivate: [authGuard] },
+  { path: 'exams', component: Exams, canActivate: [authGuard] },
   { path: '', redirectTo: 'students', pathMatch: 'full' },
   { path: '**', redirectTo: 'students' },
 ];

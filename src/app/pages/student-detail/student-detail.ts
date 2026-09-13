@@ -12,7 +12,7 @@ import { Select } from 'primeng/select';
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from 'primeng/tabs';
 import { TableModule } from 'primeng/table';
 import { DataService } from '../../services/data.service';
-import { StudentProfile, PaymentStatus } from '../../models';
+import { StudentProfile, PaymentStatus, ExamTemplate } from '../../models';
 
 interface StatusOption {
   label: string;
@@ -37,11 +37,9 @@ export class StudentDetail {
   error = signal('');
 
   // exam form
-  examSubject = '';
-  examTitle = '';
-  examGrade = 0;
-  examMaxGrade = 100;
-  examDate = new Date().toISOString().slice(0, 10);
+  examTemplates: ExamTemplate[] = [];
+  selectedExamId = '';
+  examGrade: number | '' = '';
 
   // homework form
   hwTitle = '';
@@ -67,7 +65,8 @@ export class StudentDetail {
   async ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
     try {
-      this.profile.set(await this.data.getProfile(id));
+      const [profile] = await Promise.all([this.data.getProfile(id), this.loadExamTemplates()]);
+      this.profile.set(profile);
     } catch (e) {
       this.error.set(e instanceof Error ? e.message : 'Failed to load profile');
     } finally {
@@ -75,9 +74,26 @@ export class StudentDetail {
     }
   }
 
-  private async refresh() {
+  async loadExamTemplates() {
+    try {
+      this.examTemplates = await this.data.listExamTemplates();
+    } catch {
+      this.examTemplates = [];
+    }
+  }
+
+  async refresh() {
     const id = this.route.snapshot.paramMap.get('id')!;
     this.profile.set(await this.data.getProfile(id));
+  }
+
+  examOptions() {
+    return this.examTemplates.map((e) => ({ label: `${e.title} — ${e.subject}`, value: e._id }));
+  }
+
+  selectedExamMax() {
+    const e = this.examTemplates.find((x) => x._id === this.selectedExamId);
+    return e ? e.maxGrade : 100;
   }
 
   async addExam() {
@@ -85,17 +101,12 @@ export class StudentDetail {
     this.formError.set('');
     this.adding.set('exam');
     try {
-      await this.data.createExam({
-        studentId: p.user._id,
-        subject: this.examSubject,
-        title: this.examTitle,
-        grade: Number(this.examGrade),
-        maxGrade: Number(this.examMaxGrade),
-        date: this.examDate,
-      });
-      this.examTitle = '';
-      this.examGrade = 0;
-      this.formOk.set('Exam added');
+      if (!this.selectedExamId) throw new Error('Choose an exam');
+      const score = Number(this.examGrade);
+      if (!Number.isFinite(score)) throw new Error('Enter a valid score');
+      await this.data.upsertExamGrade(this.selectedExamId, p.user._id, score);
+      this.examGrade = '';
+      this.formOk.set('Exam grade added');
       await this.refresh();
     } catch (e) {
       this.formError.set(e instanceof Error ? e.message : 'Failed');

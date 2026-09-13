@@ -18,6 +18,32 @@ export interface Exam {
   date: string;
 }
 
+export interface ExamTemplate {
+  _id: string;
+  title: string;
+  subject: string;
+  maxGrade: number;
+  date: string;
+  lessonRef?: string;
+  gradedCount: number;
+  averagePercent: number | null;
+}
+
+export interface ExamGradePayload {
+  _id: string;
+  grade: number;
+  student: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+}
+
+export interface ExamGradesResponse {
+  exam: { _id: string; title: string; subject: string; maxGrade: number; date: string };
+  grades: ExamGradePayload[];
+}
+
 export interface Homework {
   _id: string;
   studentId: string;

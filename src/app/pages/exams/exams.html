@@ -1,0 +1,193 @@
+<div class="page-header">
+  <div>
+    <div class="title-row">
+      <h1 class="page-title">Exams</h1>
+      <span class="title-badge"><i class="pi pi-clipboard"></i> {{ exams().length }} exams</span>
+    </div>
+    <p class="page-subtitle">Create exams once, then grade any student with just a score.</p>
+  </div>
+  <p-button [label]="'New exam'" icon="pi pi-plus" (onClick)="openAdd()" />
+</div>
+
+@if (success()) {
+  <p-message severity="success" class="w-full mb-4">{{ success() }}</p-message>
+}
+
+@if (loading()) {
+  <div class="state"><i class="pi pi-spin pi-spinner"></i><span>Loading exams…</span></div>
+} @else if (error()) {
+  <div class="state"><i class="pi pi-exclamation-triangle text-red"></i><span>{{ error() }}</span></div>
+} @else {
+  <div class="stat-grid">
+    <p-card class="stat-card">
+      <div class="stat-row">
+        <span class="stat-icon icon-primary"><i class="pi pi-clipboard"></i></span>
+        <div>
+          <span class="stat-label">Total exams</span>
+          <strong class="stat-value">{{ exams().length }}</strong>
+        </div>
+      </div>
+    </p-card>
+    <p-card class="stat-card">
+      <div class="stat-row">
+        <span class="stat-icon icon-blue"><i class="pi pi-book"></i></span>
+        <div>
+          <span class="stat-label">Subjects</span>
+          <strong class="stat-value">{{ subjects() }}</strong>
+        </div>
+      </div>
+    </p-card>
+    <p-card class="stat-card">
+      <div class="stat-row">
+        <span class="stat-icon icon-green"><i class="pi pi-check-square"></i></span>
+        <div>
+          <span class="stat-label">Grades recorded</span>
+          <strong class="stat-value">{{ totalGraded() }}</strong>
+        </div>
+      </div>
+    </p-card>
+    <p-card class="stat-card">
+      <div class="stat-row">
+        <span class="stat-icon icon-amber"><i class="pi pi-percentage"></i></span>
+        <div>
+          <span class="stat-label">Average</span>
+          <strong class="stat-value">{{ overallAvg() != null ? overallAvg() + '%' : '—' }}</strong>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  @if (exams().length === 0) {
+    <div class="state">
+      <i class="pi pi-clipboard"></i>
+      <span>No exams yet. Click <strong>New exam</strong> to create your first exam, then grade students from the Students page.</span>
+    </div>
+  } @else {
+    <div class="table-card">
+      <p-table [value]="exams()" [tableStyle]="{ 'min-width': '58rem' }" styleClass="p-datatable-sm">
+        <ng-template #header>
+          <tr>
+            <th>Title</th>
+            <th>Subject</th>
+            <th>Out of</th>
+            <th>Graded</th>
+            <th>Average</th>
+            <th>Date</th>
+            <th style="width: 7rem">Actions</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-e>
+          <tr>
+            <td>
+              <div class="exam-name">
+                <span class="exam-icon"><i class="pi pi-file"></i></span>
+                <strong>{{ e.title }}</strong>
+              </div>
+            </td>
+            <td>
+              <p-tag [value]="e.subject" severity="secondary" />
+            </td>
+            <td class="num">{{ e.maxGrade }}</td>
+            <td class="num">{{ e.gradedCount }}</td>
+            <td>
+              @if (e.averagePercent != null) {
+                <p-tag [value]="e.averagePercent + '%'" [severity]="gradeSeverity(e.averagePercent)" />
+              } @else {
+                <span class="muted">—</span>
+              }
+            </td>
+            <td class="muted">{{ e.date | date: 'MMM d, y' }}</td>
+            <td>
+              <div class="row-actions">
+                <p-button icon="pi pi-pencil" severity="secondary" [text]="true" size="small"
+                          aria-label="Edit exam" (onClick)="openEdit(e)" />
+                <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small"
+                          aria-label="Delete exam" (onClick)="deleteExam(e)" />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+}
+
+<p-dialog [(visible)]="showAdd" [modal]="true" [dismissableMask]="true" [closable]="true"
+          header="New exam" [style]="{ maxWidth: '500px', width: '90vw' }">
+  <div class="form-stack">
+    @if (error()) {
+      <p-message severity="error" class="w-full">{{ error() }}</p-message>
+    }
+    <div class="field">
+      <p-floatlabel>
+        <input pInputText id="eTitle" class="w-full" [(ngModel)]="addTitle" name="addTitle" autocomplete="off" />
+        <label for="eTitle">Exam title</label>
+      </p-floatlabel>
+    </div>
+    <div class="field">
+      <p-floatlabel>
+        <input pInputText id="eSubject" class="w-full" [(ngModel)]="addSubject" name="addSubject" autocomplete="off" />
+        <label for="eSubject">Subject</label>
+      </p-floatlabel>
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <p-floatlabel>
+          <input pInputText id="eMax" type="number" min="1" class="w-full" [(ngModel)]="addMaxGrade" name="addMaxGrade" />
+          <label for="eMax">Max grade</label>
+        </p-floatlabel>
+      </div>
+      <div class="field">
+        <p-floatlabel>
+          <input pInputText id="eDate" type="date" class="w-full" [(ngModel)]="addDate" name="addDate" />
+          <label for="eDate">Date</label>
+        </p-floatlabel>
+      </div>
+    </div>
+  </div>
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showAdd.set(false)" />
+    <p-button [label]="adding ? 'Creating…' : 'Create exam'" [loading]="adding" icon="pi pi-plus"
+              (onClick)="addExam()" [disabled]="!addTitle.trim() || !addSubject.trim() || !addMaxGrade" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="showEdit" [modal]="true" [dismissableMask]="true" [closable]="true"
+          header="Edit exam" [style]="{ maxWidth: '500px', width: '90vw' }">
+  <div class="form-stack">
+    @if (error()) {
+      <p-message severity="error" class="w-full">{{ error() }}</p-message>
+    }
+    <div class="field">
+      <p-floatlabel>
+        <input pInputText id="eTitle2" class="w-full" [(ngModel)]="addTitle" name="eTitle2" autocomplete="off" />
+        <label for="eTitle2">Exam title</label>
+      </p-floatlabel>
+    </div>
+    <div class="field">
+      <p-floatlabel>
+        <input pInputText id="eSubject2" class="w-full" [(ngModel)]="addSubject" name="eSubject2" autocomplete="off" />
+        <label for="eSubject2">Subject</label>
+      </p-floatlabel>
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <p-floatlabel>
+          <input pInputText id="eMax2" type="number" min="1" class="w-full" [(ngModel)]="addMaxGrade" name="eMax2" />
+          <label for="eMax2">Max grade</label>
+        </p-floatlabel>
+      </div>
+      <div class="field">
+        <p-floatlabel>
+          <input pInputText id="eDate2" type="date" class="w-full" [(ngModel)]="addDate" name="eDate2" />
+          <label for="eDate2">Date</label>
+        </p-floatlabel>
+      </div>
+    </div>
+  </div>
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showEdit.set(false)" />
+    <p-button [label]="saving ? 'Saving…' : 'Save changes'" [loading]="saving" icon="pi pi-check"
+              (onClick)="saveExam()" [disabled]="!addTitle.trim() || !addSubject.trim() || !addMaxGrade" />
+  </ng-template>
+</p-dialog>

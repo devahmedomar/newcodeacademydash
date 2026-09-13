@@ -124,40 +124,27 @@
               <div class="card-head"><span class="section-title">Add exam grade</span></div>
               <div class="form-grid">
                 <div class="field span-2">
-                  <p-floatlabel>
-                    <input pInputText id="exTitle" class="w-full" [(ngModel)]="examTitle" name="examTitle" autocomplete="off" />
-                    <label for="exTitle">Title</label>
-                  </p-floatlabel>
+                  <label class="select-label" for="exExam">Exam</label>
+                  <p-select id="exExam" [options]="examOptions()" optionLabel="label" optionValue="value"
+                            [(ngModel)]="selectedExamId" name="exExam" class="w-full"
+                            placeholder="Choose an exam…" [showClear]="true" />
                 </div>
                 <div class="field">
                   <p-floatlabel>
-                    <input pInputText id="exSubject" class="w-full" [(ngModel)]="examSubject" name="examSubject" autocomplete="off" />
-                    <label for="exSubject">Subject</label>
-                  </p-floatlabel>
-                </div>
-                <div class="field">
-                  <p-floatlabel>
-                    <input pInputText id="exDate" type="date" class="w-full" [(ngModel)]="examDate" name="examDate" />
-                    <label for="exDate">Date</label>
-                  </p-floatlabel>
-                </div>
-                <div class="field">
-                  <p-floatlabel>
-                    <input pInputText id="exGrade" type="number" class="w-full" [(ngModel)]="examGrade" name="examGrade" />
-                    <label for="exGrade">Score</label>
-                  </p-floatlabel>
-                </div>
-                <div class="field">
-                  <p-floatlabel>
-                    <input pInputText id="exMax" type="number" class="w-full" [(ngModel)]="examMaxGrade" name="examMaxGrade" />
-                    <label for="exMax">Out of</label>
+                    <input pInputText id="exGrade" type="number" class="w-full" [(ngModel)]="examGrade" name="exGrade" />
+                    <label for="exGrade">Score / {{ selectedExamMax() }}</label>
                   </p-floatlabel>
                 </div>
                 <div class="field submit-col">
-                  <p-button label="Add exam" icon="pi pi-plus" severity="secondary" [outlined]="true"
-                            (onClick)="addExam()" [disabled]="!examTitle || !examSubject"
+                  <p-button label="Add grade" icon="pi pi-plus" severity="secondary" [outlined]="true"
+                            (onClick)="addExam()" [disabled]="!selectedExamId || examGrade === ''"
                             [loading]="adding() === 'exam'" />
                 </div>
+                @if (examTemplates.length === 0) {
+                  <div class="field span-2">
+                    <p-message severity="warn" class="w-full">No exams yet — create one from the Exams tab first.</p-message>
+                  </div>
+                }
               </div>
             </p-card>
 

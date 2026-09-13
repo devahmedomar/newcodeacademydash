@@ -1,4 +1,4 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
@@ -10,12 +10,13 @@ import { FloatLabel } from 'primeng/floatlabel';
 import { Message } from 'primeng/message';
 import { Dialog } from 'primeng/dialog';
 import { TableModule } from 'primeng/table';
+import { Select } from 'primeng/select';
 import { DataService } from '../../services/data.service';
-import { Student } from '../../models';
+import { Student, ExamTemplate } from '../../models';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, FormsModule, DatePipe, Card, Tag, Button, InputText, FloatLabel, Message, Dialog, TableModule],
+  imports: [RouterLink, FormsModule, DatePipe, Card, Tag, Button, InputText, FloatLabel, Message, Dialog, TableModule, Select],
   styleUrl: './dashboard.css',
   templateUrl: './dashboard.html',
 })
@@ -33,8 +34,25 @@ export class Dashboard {
   addError = '';
   adding = false;
 
+  exams = signal<ExamTemplate[]>([]);
+  selectedExamId = signal('');
+  gradeLoading = signal(false);
+  savingFor = signal('');
+  gradingMsg = signal('');
+  gradingErr = signal('');
+  gradesByStudent = signal<Record<string, number>>({});
+  gradeInputs = signal<Record<string, number>>({});
+
+  examOptions = computed(() =>
+    this.exams().map((e) => ({ label: `${e.title} — ${e.subject}`, value: e._id })),
+  );
+
+  selectedExam = computed(
+    () => this.exams().find((e) => e._id === this.selectedExamId()) ?? null,
+  );
+
   async ngOnInit() {
-    await this.loadStudents();
+    await Promise.all([this.loadStudents(), this.loadExams()]);
   }
 
   async loadStudents() {
@@ -46,6 +64,14 @@ export class Dashboard {
       this.error.set(e instanceof Error ? e.message : 'Failed to load students');
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  async loadExams() {
+    try {
+      this.exams.set(await this.data.listExamTemplates());
+    } catch {
+      // grading panel simply stays hidden when exams cannot load
     }
   }
 
@@ -69,6 +95,85 @@ export class Dashboard {
     } finally {
       this.adding = false;
     }
+  }
+
+  async onExamChange(id: string) {
+    this.gradingErr.set('');
+    this.gradingMsg.set('');
+    this.gradesByStudent.set({});
+    this.gradeInputs.set({});
+    if (!id) return;
+    this.gradeLoading.set(true);
+    try {
+      const res = await this.data.listExamGrades(id);
+      const map: Record<string, number> = {};
+      for (const g of res.grades) map[g.student._id] = g.grade;
+      this.gradesByStudent.set(map);
+      this.gradeInputs.set({ ...map });
+    } catch (e) {
+      this.gradingErr.set(e instanceof Error ? e.message : 'Failed to load grades');
+    } finally {
+      this.gradeLoading.set(false);
+    }
+  }
+
+  async saveGrade(s: Student) {
+    const exam = this.selectedExam();
+    if (!exam) return;
+    this.savingFor.set(s._id);
+    this.gradingErr.set('');
+    this.gradingMsg.set('');
+    try {
+      const value = Number(this.gradeInputs()[s._id]);
+      if (!Number.isFinite(value)) throw new Error('Enter a valid score');
+      await this.data.upsertExamGrade(exam._id, s._id, value);
+      this.gradesByStudent.set({ ...this.gradesByStudent(), [s._id]: value });
+      this.gradingMsg.set(`Grade saved for ${s.name}`);
+    } catch (e) {
+      this.gradingErr.set(e instanceof Error ? e.message : 'Failed to save grade');
+    } finally {
+      this.savingFor.set('');
+    }
+  }
+
+  inputValue(s: Student) {
+    const v = this.gradeInputs()[s._id];
+    return v === undefined ? '' : v;
+  }
+
+  onScoreInput(s: Student, value: number | string | null) {
+    const current = this.gradeInputs();
+    if (value === '' || value === null || value === undefined) {
+      const { [s._id]: _drop, ...rest } = current;
+      this.gradeInputs.set(rest);
+      return;
+    }
+    this.gradeInputs.set({ ...current, [s._id]: Number(value) });
+  }
+
+  existingGrade(s: Student) {
+    return this.gradesByStudent()[s._id] ?? null;
+  }
+
+  selectedMax() {
+    return this.selectedExam()?.maxGrade ?? 0;
+  }
+
+  gradeSummary(s: Student) {
+    const g = this.existingGrade(s);
+    return g != null ? `${g} · ${this.percent(g, this.selectedMax())}%` : '';
+  }
+
+  gradeSeverityFor(s: Student): 'success' | 'warn' | 'danger' {
+    const g = this.existingGrade(s);
+    if (g == null) return 'danger';
+    if (g >= this.selectedMax() * 0.85) return 'success';
+    if (g >= this.selectedMax() * 0.7) return 'warn';
+    return 'danger';
+  }
+
+  percent(grade: number, max: number) {
+    return max > 0 ? Math.round((grade / max) * 100) : 0;
   }
 
   severity(active: boolean): 'success' | 'secondary' {

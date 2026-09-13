@@ -7,6 +7,76 @@
             (onClick)="openAdd()" class="add-btn" />
 </div>
 
+@if (exams().length > 0 && students().length > 0) {
+  <p-card class="grade-card">
+    <div class="grade-head">
+      <div class="grade-heading">
+        <span class="grade-icon"><i class="pi pi-pencil-square"></i></span>
+        <div>
+          <strong>Grade an exam</strong>
+          <span class="grade-hint">Pick an exam, then enter a score for each student — no need to re-enter exam details.</span>
+        </div>
+      </div>
+      <p-select class="exam-picker" [options]="examOptions()" optionLabel="label" optionValue="value"
+                [(ngModel)]="selectedExamId" name="examPick" placeholder="Choose an exam…"
+                [showClear]="true" (onChange)="onExamChange($event.value)" />
+    </div>
+
+    @if (gradingMsg()) {
+      <p-message severity="success" class="w-full mb-3">{{ gradingMsg() }}</p-message>
+    }
+    @if (gradingErr()) {
+      <p-message severity="error" class="w-full mb-3">{{ gradingErr() }}</p-message>
+    }
+
+    @if (selectedExam()) {
+      @if (gradeLoading()) {
+        <div class="state"><i class="pi pi-spin pi-spinner"></i><span>Loading grades…</span></div>
+      } @else {
+        <p-table [value]="students()" [size]="'small'" [stripedRows]="true"
+                 [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]">
+          <ng-template #header>
+            <tr><th>Student</th><th style="width: 12rem">Score</th><th style="width: 10rem"></th></tr>
+          </ng-template>
+          <ng-template #body let-s>
+            <tr>
+              <td>
+                <span class="avatar" [class.text-primary]="true">{{ s.name[0] }}</span>
+                <strong>{{ s.name }}</strong>
+                <span class="muted grade-email">{{ s.email }}</span>
+              </td>
+              <td>
+                <div class="score-cell">
+                  <input pInputText type="number" class="score-input" min="0" [max]="selectedMax()"
+                         [ngModel]="inputValue(s)" (ngModelChange)="onScoreInput(s, $event)"
+                         [name]="'g-' + s._id" inputmode="decimal" />
+                  <span class="muted">/ {{ selectedMax() }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="score-actions">
+                  @if (existingGrade(s) != null) {
+                    <p-tag [value]="gradeSummary(s)" [severity]="gradeSeverityFor(s)" />
+                  }
+                  <p-button [icon]="existingGrade(s) != null ? 'pi pi-check' : 'pi pi-save'"
+                            [label]="existingGrade(s) != null ? 'Update' : 'Save'"
+                            [loading]="savingFor() === s._id" severity="secondary"
+                            (onClick)="saveGrade(s)" [disabled]="gradeInputs()[s._id] === undefined" />
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      }
+    } @else {
+      <div class="state grade-empty">
+        <i class="pi pi-clipboard"></i>
+        <span>Select an exam above to start grading students. No exams? Create one in the <strong>Exams</strong> tab.</span>
+      </div>
+    }
+  </p-card>
+}
+
 <p-dialog [(visible)]="showAdd" [modal]="true" [dismissableMask]="true" [closable]="true"
           header="Add a student account" [style]="{ maxWidth: '440px', width: '90vw' }">
   <div class="form-stack">

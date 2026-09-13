@@ -42,3 +42,35 @@
 .open-btn ::ng-deep .p-button {
   padding: 0.35rem 0.6rem;
 }
+
+.grade-card { margin-bottom: 1rem; }
+.grade-card ::ng-deep .p-card-body { padding: 1.1rem 1.25rem; }
+.grade-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.grade-heading { display: flex; align-items: center; gap: .75rem; }
+.grade-heading strong { font-size: 1rem; display: block; }
+.grade-heading div { line-height: 1.35; }
+.grade-hint { display: block; font-size: .78rem; color: var(--p-text-muted-color); max-width: 32rem; }
+.grade-icon {
+  width: 2.4rem; height: 2.4rem; border-radius: .7rem; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--p-primary-color);
+  background: color-mix(in srgb, var(--p-primary-color) 12%, transparent);
+}
+.exam-picker { min-width: 16rem; max-width: 100%; }
+.grade-email { margin-left: .4rem; font-size: .8rem; }
+.score-cell { display: flex; align-items: center; gap: .5rem; }
+.score-input { max-width: 6rem; }
+.score-actions { display: flex; align-items: center; gap: .5rem; }
+.grade-empty { padding: .6rem 0 0; }
+@media (max-width: 720px) {
+  .grade-head { flex-direction: column; align-items: stretch; }
+  .exam-picker { min-width: 100%; }
+  .score-actions { flex-wrap: wrap; align-items: flex-start; }
+}
