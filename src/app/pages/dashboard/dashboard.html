@@ -1,0 +1,65 @@
+<div class="page-title">
+  <h1>Students</h1>
+  <button class="btn" (click)="toggleAdd()">{{ showAdd() ? 'Cancel' : '+ Add student' }}</button>
+</div>
+
+@if (error()) {
+  <div class="alert alert-error">{{ error() }}</div>
+}
+
+@if (showAdd()) {
+  <div class="card">
+    <h3>Add a student account</h3>
+    @if (addError) {
+      <div class="alert alert-error">{{ addError }}</div>
+    }
+    <div class="field-grid">
+      <div class="form-row">
+        <label class="label" for="sname">Full name</label>
+        <input class="input" id="sname" [(ngModel)]="addName" name="addName" required />
+      </div>
+      <div class="form-row">
+        <label class="label" for="semail">Email</label>
+        <input class="input" id="semail" type="email" [(ngModel)]="addEmail" name="addEmail" required />
+      </div>
+      <div class="form-row">
+        <label class="label" for="spass">Temporary password</label>
+        <input class="input" id="spass" [(ngModel)]="addPassword" name="addPassword" required />
+      </div>
+    </div>
+    <button class="btn" (click)="addStudent()" [disabled]="adding || !addName || !addEmail || !addPassword">
+      {{ adding ? 'Creating…' : 'Create account' }}
+    </button>
+  </div>
+}
+
+<div class="card">
+  @if (loading()) {
+    <div class="empty">Loading students…</div>
+  } @else if (students().length === 0) {
+    <div class="empty">No students yet. Add your first one above.</div>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Enrolled</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of students(); track s._id) {
+          <tr>
+            <td><strong>{{ s.name }}</strong></td>
+            <td>{{ s.email }}</td>
+            <td>{{ s.enrollmentDate | date: 'MMM yyyy' }}</td>
+            <td style="text-align:right">
+              <a class="btn btn-secondary btn-sm" [routerLink]="['/students', s._id]">Open →</a>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

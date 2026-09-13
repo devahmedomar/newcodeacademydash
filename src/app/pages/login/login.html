@@ -1,0 +1,24 @@
+<div class="auth-wrap">
+  <form class="auth-card" (ngSubmit)="submit()">
+    <h1>Teacher Dashboard</h1>
+    <p class="sub">New Code Academy — sign in</p>
+
+    @if (error) {
+      <div class="alert alert-error">{{ error }}</div>
+    }
+
+    <div class="form-row">
+      <label class="label" for="email">Email</label>
+      <input class="input" id="email" type="email" [(ngModel)]="email" name="email" required autocomplete="email" />
+    </div>
+
+    <div class="form-row">
+      <label class="label" for="password">Password</label>
+      <input class="input" id="password" type="password" [(ngModel)]="password" name="password" required autocomplete="current-password" />
+    </div>
+
+    <button class="btn" type="submit" style="width:100%" [disabled]="loading">
+      {{ loading ? 'Signing in…' : 'Sign in' }}
+    </button>
+  </form>
+</div>

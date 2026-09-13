@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "framework": "angular",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

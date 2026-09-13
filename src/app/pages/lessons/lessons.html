@@ -1,0 +1,91 @@
+<div class="page-title">
+  <h1>Lessons</h1>
+  <button class="btn" (click)="toggleAdd()">{{ showAdd() ? 'Cancel' : '+ Add lesson' }}</button>
+</div>
+
+@if (error()) {
+  <div class="alert alert-error">{{ error() }}</div>
+}
+@if (success()) {
+  <div class="alert alert-success">{{ success() }}</div>
+}
+
+@if (showAdd()) {
+  <div class="card">
+    <h3>New lesson</h3>
+    <div class="form-row">
+      <label class="label" for="lTitle">Lesson title</label>
+      <input class="input" id="lTitle" [(ngModel)]="addTitle" name="addTitle" placeholder="Variables in TypeScript" />
+    </div>
+    <div class="field-grid">
+      <div class="form-row">
+        <label class="label" for="lVideo">YouTube link or video ID</label>
+        <input class="input" id="lVideo" [(ngModel)]="addVideo" name="addVideo" placeholder="https://youtu.be/…" />
+      </div>
+      <div class="form-row">
+        <label class="label" for="lModule">Module / unit</label>
+        <input class="input" id="lModule" [(ngModel)]="addModule" name="addModule" placeholder="Module 1" />
+      </div>
+      <div class="form-row">
+        <label class="label" for="lOrder">Order</label>
+        <input class="input" id="lOrder" type="number" [(ngModel)]="addOrder" name="addOrder" />
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="label" for="lDesc">Description</label>
+      <input class="input" id="lDesc" [(ngModel)]="addDescription" name="addDescription" placeholder="Optional" />
+    </div>
+    <label style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
+      <input type="checkbox" [(ngModel)]="addPublished" name="addPublished" />
+      <span>Published (visible to students)</span>
+    </label>
+    <button class="btn" (click)="addLesson()" [disabled]="adding || !addTitle || !addVideo || !addModule">
+      {{ adding ? 'Adding…' : 'Add lesson' }}
+    </button>
+  </div>
+}
+
+@if (loading()) {
+  <div class="empty">Loading lessons…</div>
+} @else if (lessons().length === 0) {
+  <div class="empty">No lessons yet. Add your first YouTube lesson above.</div>
+} @else {
+  @for (module of modules(); track module) {
+    <section class="card">
+      <h3>{{ module }}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Title</th>
+            <th>YouTube ID</th>
+            <th>Status</th>
+            <th>Uploaded</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of byModule(module); track l._id) {
+            <tr>
+              <td>{{ l.order }}</td>
+              <td><strong>{{ l.title }}</strong></td>
+              <td>{{ l.youtubeVideoId }}</td>
+              <td>
+                <span [class]="l.published ? 'badge badge-published' : 'badge badge-draft'">
+                  {{ l.published ? 'published' : 'draft' }}
+                </span>
+              </td>
+              <td>{{ l.uploadDate | date: 'shortDate' }}</td>
+              <td style="text-align:right">
+                <button class="btn btn-secondary btn-sm" (click)="togglePublish(l)">
+                  {{ l.published ? 'Unpublish' : 'Publish' }}
+                </button>
+                <button class="btn btn-danger btn-sm" (click)="deleteLesson(l)">Delete</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+}

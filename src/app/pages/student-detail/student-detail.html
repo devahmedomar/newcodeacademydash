@@ -1,0 +1,199 @@
+<div class="page-title">
+  <a class="btn btn-secondary btn-sm" routerLink="/students">← All students</a>
+  <h1>{{ profile()?.user?.name }}</h1>
+  <p class="muted">{{ profile()?.user?.email }}</p>
+</div>
+
+@if (loading()) {
+  <div class="empty">Loading profile…</div>
+} @else if (error()) {
+  <div class="alert alert-error">{{ error() }}</div>
+} @else {
+  @if (formError()) {
+    <div class="alert alert-error">{{ formError() }}</div>
+  }
+  @if (formOk()) {
+    <div class="alert alert-success">{{ formOk() }}</div>
+  }
+
+  @if (profile()?.currentPayment; as cp) {
+    <div class="card payment-banner">
+      <div>
+        <strong>{{ cp.month }}</strong> — status
+        <span [class]="badgeClass(cp.status)">{{ cp.status }}</span>
+      </div>
+      <button class="btn btn-sm" (click)="setPaymentStatus(cp._id, 'paid')" [disabled]="cp.status === 'paid'">
+        Mark paid
+      </button>
+    </div>
+  }
+
+  <section class="card">
+    <h3>Add exam grade</h3>
+    <div class="field-grid">
+      <div>
+        <label class="label" for="exSubject">Subject</label>
+        <input class="input" id="exSubject" [(ngModel)]="examSubject" name="examSubject" placeholder="Math" />
+      </div>
+      <div>
+        <label class="label" for="exTitle">Title</label>
+        <input class="input" id="exTitle" [(ngModel)]="examTitle" name="examTitle" placeholder="Unit 1 test" />
+      </div>
+      <div>
+        <label class="label" for="exGrade">Grade</label>
+        <input class="input" id="exGrade" type="number" [(ngModel)]="examGrade" name="examGrade" />
+      </div>
+      <div>
+        <label class="label" for="exMax">Out of</label>
+        <input class="input" id="exMax" type="number" [(ngModel)]="examMaxGrade" name="examMaxGrade" />
+      </div>
+      <div>
+        <label class="label" for="exDate">Date</label>
+        <input class="input" id="exDate" type="date" [(ngModel)]="examDate" name="examDate" />
+      </div>
+      <div style="align-self:end">
+        <button class="btn" (click)="addExam()" [disabled]="!examTitle || !examSubject">Add</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Add homework</h3>
+    <div class="field-grid">
+      <div>
+        <label class="label" for="hwTitle">Title</label>
+        <input class="input" id="hwTitle" [(ngModel)]="hwTitle" name="hwTitle" placeholder="Chapter 2 exercises" />
+      </div>
+      <div>
+        <label class="label" for="hwPoints">Points</label>
+        <input class="input" id="hwPoints" type="number" [(ngModel)]="hwPoints" name="hwPoints" />
+      </div>
+      <div>
+        <label class="label" for="hwMax">Max points</label>
+        <input class="input" id="hwMax" type="number" [(ngModel)]="hwMaxPoints" name="hwMaxPoints" />
+      </div>
+      <div>
+        <label class="label" for="hwFb">Feedback</label>
+        <input class="input" id="hwFb" [(ngModel)]="hwFeedback" name="hwFeedback" placeholder="Optional note" />
+      </div>
+      <div style="align-self:end">
+        <button class="btn" (click)="addHomework()" [disabled]="!hwTitle">Add</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Payments</h3>
+    @if (profile()!.payments.length === 0) {
+      <div class="empty">No payment records yet.</div>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Paid on</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of profile()!.payments; track p._id) {
+            <tr>
+              <td><strong>{{ p.month }}</strong></td>
+              <td>{{ p.amount }} EGP</td>
+              <td><span [class]="badgeClass(p.status)">{{ p.status }}</span></td>
+              <td>{{ p.paidOn ? (p.paidOn | date: 'shortDate') : '—' }}</td>
+              <td>
+                @if (p.status !== 'paid') {
+                  <button class="btn btn-sm btn-secondary" (click)="setPaymentStatus(p._id, 'paid')">Paid</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+    <div class="field-grid" style="margin-top:1rem">
+      <div>
+        <label class="label" for="payMonth">Month</label>
+        <input class="input" id="payMonth" type="month" [(ngModel)]="payMonth" name="payMonth" />
+      </div>
+      <div>
+        <label class="label" for="payAmount">Amount</label>
+        <input class="input" id="payAmount" type="number" [(ngModel)]="payAmount" name="payAmount" />
+      </div>
+      <div>
+        <label class="label" for="payStatus">Status</label>
+        <select class="select" id="payStatus" [(ngModel)]="payStatus" name="payStatus">
+          <option value="unpaid">Unpaid</option>
+          <option value="paid">Paid</option>
+          <option value="late">Late</option>
+        </select>
+      </div>
+      <div style="align-self:end">
+        <button class="btn btn-secondary" (click)="addPayment()">Add record</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Exams</h3>
+    @if (profile()!.exams.length === 0) {
+      <div class="empty">No exams yet.</div>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Subject</th>
+            <th>Grade</th>
+            <th>%</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of profile()!.exams; track e._id) {
+            <tr>
+              <td>{{ e.title }}</td>
+              <td>{{ e.subject }}</td>
+              <td>{{ e.grade }} / {{ e.maxGrade }}</td>
+              <td><strong>{{ percent(e.grade, e.maxGrade) }}%</strong></td>
+              <td>{{ e.date | date: 'shortDate' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+
+  <section class="card">
+    <h3>Homework</h3>
+    @if (profile()!.homeworks.length === 0) {
+      <div class="empty">No homework yet.</div>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Points</th>
+            <th>%</th>
+            <th>Submitted</th>
+            <th>Feedback</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (h of profile()!.homeworks; track h._id) {
+            <tr>
+              <td>{{ h.title }}</td>
+              <td>{{ h.points }} / {{ h.maxPoints }}</td>
+              <td><strong>{{ percent(h.points, h.maxPoints) }}%</strong></td>
+              <td>{{ h.submittedAt ? (h.submittedAt | date: 'shortDate') : '—' }}</td>
+              <td>{{ h.feedback || '—' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+}
