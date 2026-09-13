@@ -1,21 +1,19 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { Card } from 'primeng/card';
-import { Tag } from 'primeng/tag';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
 import { ToggleSwitch } from 'primeng/toggleswitch';
 import { FloatLabel } from 'primeng/floatlabel';
 import { Message } from 'primeng/message';
 import { Dialog } from 'primeng/dialog';
-import { TableModule } from 'primeng/table';
 import { DataService } from '../../services/data.service';
 import { Lesson } from '../../models';
 
 @Component({
   selector: 'app-lessons',
-  imports: [FormsModule, DatePipe, Card, Tag, Button, InputText, ToggleSwitch, FloatLabel, Message, Dialog, TableModule],
+  imports: [FormsModule, DatePipe, Card, Button, InputText, ToggleSwitch, FloatLabel, Message, Dialog],
   styleUrl: './lessons.css',
   templateUrl: './lessons.html',
 })
@@ -26,6 +24,34 @@ export class Lessons {
   loading = signal(true);
   error = signal('');
   success = signal('');
+
+  search = signal('');
+  selectedModule = signal('All');
+
+  modules = computed(() => [...new Set(this.lessons().map((l) => l.module))].sort((a, b) => a.localeCompare(b)));
+  allModules = computed(() => ['All', ...this.modules()]);
+  publishedCount = computed(() => this.lessons().filter((l) => l.published).length);
+  draftCount = computed(() => this.lessons().length - this.publishedCount());
+
+  filteredLessons = computed(() => {
+    const q = this.search().trim().toLowerCase();
+    const m = this.selectedModule();
+    return this.lessons().filter(
+      (l) =>
+        (m === 'All' || l.module === m) &&
+        (!q || [l.title, l.module, l.youtubeVideoId, l.description ?? ''].join(' ').toLowerCase().includes(q)),
+    );
+  });
+
+  grouped = computed(() => {
+    const list = this.filteredLessons();
+    return this.modules()
+      .filter((m) => list.some((l) => l.module === m))
+      .map((m) => {
+        const lessons = list.filter((l) => l.module === m).sort((a, b) => a.order - b.order);
+        return { module: m, lessons, published: lessons.filter((l) => l.published).length };
+      });
+  });
 
   showAdd = signal(false);
   addTitle = '';
@@ -129,9 +155,11 @@ export class Lessons {
   async togglePublish(l: Lesson) {
     try {
       await this.data.updateLesson(l._id, { published: !l.published });
+      this.success.set(l.published ? 'Lesson published' : 'Lesson hidden from students');
       await this.loadLessons();
     } catch (e) {
-      this.error.set(e instanceof Error ? e.message : 'Failed');
+      await this.loadLessons();
+      this.error.set(e instanceof Error ? e.message : 'Failed to update');
     }
   }
 
@@ -139,24 +167,27 @@ export class Lessons {
     if (!confirm(`Delete "${l.title}"?`)) return;
     try {
       await this.data.deleteLesson(l._id);
+      this.success.set('Lesson deleted');
       await this.loadLessons();
     } catch (e) {
       this.error.set(e instanceof Error ? e.message : 'Failed');
     }
   }
 
-  modules() {
-    const m = new Set(this.lessons().map((l) => l.module));
-    return [...m];
+  countFor(m: string) {
+    if (m === 'All') return this.lessons().length;
+    return this.lessons().filter((l) => l.module === m).length;
   }
 
-  byModule(module: string) {
-    return this.lessons()
-      .filter((l) => l.module === module)
-      .sort((a, b) => a.order - b.order);
+  thumbUrl(id: string) {
+    return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
   }
 
-  publishSeverity(published: boolean): 'success' | 'secondary' {
-    return published ? 'success' : 'secondary';
+  watchUrl(id: string) {
+    return `https://www.youtube.com/watch?v=${id}`;
+  }
+
+  onThumbError(e: Event) {
+    (e.target as HTMLImageElement).style.display = 'none';
   }
 }
