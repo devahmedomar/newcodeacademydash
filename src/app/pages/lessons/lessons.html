@@ -6,7 +6,7 @@
   <p-button [label]="'Add lesson'" icon="pi pi-plus" (onClick)="openAdd()" />
 </div>
 
-<p-dialog [visible]="showAdd()" [modal]="true" [dismissableMask]="true" [closable]="true"
+<p-dialog [(visible)]="showAdd" [modal]="true" [dismissableMask]="true" [closable]="true"
           header="New lesson" [style]="{ maxWidth: '560px', width: '90vw' }">
   <div class="form-stack">
     @if (error()) {
@@ -56,6 +56,56 @@
   </ng-template>
 </p-dialog>
 
+<p-dialog [(visible)]="showEdit" [modal]="true" [dismissableMask]="true" [closable]="true"
+          header="Edit lesson" [style]="{ maxWidth: '560px', width: '90vw' }">
+  <div class="form-stack">
+    @if (error()) {
+      <p-message severity="error" class="w-full">{{ error() }}</p-message>
+    }
+    <div class="field">
+      <p-floatlabel>
+        <input pInputText id="eTitle" class="w-full" [(ngModel)]="addTitle" name="eTitle" autocomplete="off" />
+        <label for="eTitle">Lesson title</label>
+      </p-floatlabel>
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <p-floatlabel>
+          <input pInputText id="eVideo" class="w-full" [(ngModel)]="addVideo" name="eVideo" autocomplete="off" />
+          <label for="eVideo">YouTube link or video ID</label>
+        </p-floatlabel>
+      </div>
+      <div class="field">
+        <p-floatlabel>
+          <input pInputText id="eModule" class="w-full" [(ngModel)]="addModule" name="eModule" autocomplete="off" />
+          <label for="eModule">Module / unit</label>
+        </p-floatlabel>
+      </div>
+      <div class="field">
+        <p-floatlabel>
+          <input pInputText id="eOrder" type="number" class="w-full" [(ngModel)]="addOrder" name="eOrder" />
+          <label for="eOrder">Order</label>
+        </p-floatlabel>
+      </div>
+    </div>
+    <div class="field">
+      <p-floatlabel>
+        <input pInputText id="eDesc" class="w-full" [(ngModel)]="addDescription" name="eDesc" autocomplete="off" />
+        <label for="eDesc">Description (optional)</label>
+      </p-floatlabel>
+    </div>
+    <div class="toggle-row">
+      <p-toggleswitch [(ngModel)]="addPublished" name="ePublished" inputId="ePublished" />
+      <label for="ePublished">Published — visible to students</label>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showEdit.set(false)" />
+    <p-button [label]="saving ? 'Saving…' : 'Save changes'" [loading]="saving" icon="pi pi-check"
+              (onClick)="saveLesson()" [disabled]="!addTitle || !addVideo || !addModule" />
+  </ng-template>
+</p-dialog>
+
 @if (success()) {
   <p-message severity="success" class="w-full mb-4">{{ success() }}</p-message>
 }
@@ -74,7 +124,8 @@
         <h3 class="module-title mb-0">{{ module }}</h3>
         <p-tag [value]="byModule(module).length + ' lessons'" severity="secondary" />
       </div>
-      <p-table [value]="byModule(module)" [size]="'small'" [stripedRows]="true">
+      <p-table [value]="byModule(module)" [size]="'small'" [stripedRows]="true"
+               [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]">
         <ng-template pTemplate="header">
           <tr><th style="width:48px">#</th><th>Title</th><th>Video ID</th><th>Status</th><th>Uploaded</th><th></th></tr>
         </ng-template>
@@ -86,6 +137,8 @@
             <td><p-tag [value]="l.published ? 'Published' : 'Draft'" [severity]="publishSeverity(l.published)" /></td>
             <td>{{ l.uploadDate | date: 'shortDate' }}</td>
             <td class="actions-cell">
+              <p-button icon="pi pi-pencil" severity="secondary" [text]="true" size="small"
+                        (onClick)="openEdit(l)" />
               <p-button [icon]="l.published ? 'pi pi-eye-slash' : 'pi pi-eye'"
                         [label]="l.published ? 'Unpublish' : 'Publish'"
                         severity="secondary" [text]="true" size="small" (onClick)="togglePublish(l)" />

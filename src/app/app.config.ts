@@ -5,6 +5,7 @@ import { providePrimeNG } from 'primeng/config';
 import { definePreset } from '@primeuix/themes';
 import Aura from '@primeuix/themes/aura';
 import { routes } from './app.routes';
+import { environment } from '../environments/environment';
 
 const NCA_Preset = definePreset(Aura, {
   semantic: {
@@ -30,6 +31,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideAnimationsAsync(),
     providePrimeNG({
+      license: environment.primeuiLicenseKey,
       theme: {
         preset: NCA_Preset,
         options: {

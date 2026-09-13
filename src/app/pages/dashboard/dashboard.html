@@ -7,7 +7,7 @@
             (onClick)="openAdd()" class="add-btn" />
 </div>
 
-<p-dialog [visible]="showAdd()" [modal]="true" [dismissableMask]="true" [closable]="true"
+<p-dialog [(visible)]="showAdd" [modal]="true" [dismissableMask]="true" [closable]="true"
           header="Add a student account" [style]="{ maxWidth: '440px', width: '90vw' }">
   <div class="form-stack">
     @if (addError) {
@@ -52,7 +52,8 @@
         <span>No students yet. Click <strong>Add student</strong> to create your first account.</span>
       </div>
     } @else {
-      <p-table [value]="students()" [size]="'small'" [stripedRows]="true" styleClass="students-table">
+      <p-table [value]="students()" [size]="'small'" [stripedRows]="true" styleClass="students-table"
+               [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" [showCurrentPageReport]="false">
         <ng-template pTemplate="header">
           <tr><th>Name</th><th>Email</th><th>Enrolled</th><th>Status</th><th></th></tr>
         </ng-template>

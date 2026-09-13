@@ -36,6 +36,10 @@ export class Lessons {
   addPublished = true;
   adding = false;
 
+  showEdit = signal(false);
+  editingLesson: Lesson | null = null;
+  saving = false;
+
   async ngOnInit() {
     await this.loadLessons();
   }
@@ -62,6 +66,43 @@ export class Lessons {
     this.success.set('');
     this.error.set('');
     this.showAdd.set(true);
+  }
+
+  openEdit(l: Lesson) {
+    this.editingLesson = l;
+    this.addTitle = l.title;
+    this.addVideo = l.youtubeVideoId;
+    this.addModule = l.module;
+    this.addOrder = l.order;
+    this.addDescription = l.description ?? '';
+    this.addPublished = l.published;
+    this.success.set('');
+    this.error.set('');
+    this.showEdit.set(true);
+  }
+
+  async saveLesson() {
+    const l = this.editingLesson;
+    if (!l) return;
+    this.saving = true;
+    try {
+      await this.data.updateLesson(l._id, {
+        title: this.addTitle,
+        description: this.addDescription || undefined,
+        youtubeVideoId: this.addVideo,
+        module: this.addModule,
+        order: Number(this.addOrder),
+        published: this.addPublished,
+      });
+      this.showEdit.set(false);
+      this.editingLesson = null;
+      this.success.set('Lesson updated');
+      await this.loadLessons();
+    } catch (e) {
+      this.error.set(e instanceof Error ? e.message : 'Failed to update lesson');
+    } finally {
+      this.saving = false;
+    }
   }
 
   async addLesson() {
