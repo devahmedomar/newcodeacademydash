@@ -1,5 +1,70 @@
-.sort {
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.form-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.7fr;
+  gap: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .field-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field .p-inputtext {
+  width: 100%;
+}
+
+.field .p-floatlabel .p-inputtext {
+  width: 100%;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  color: var(--p-text-color);
+}
+
+.module-card {
+  margin-bottom: 1rem;
+}
+
+.module-card ::ng-deep .p-card-body {
+  padding-bottom: 0.5rem;
+}
+
+.module-card ::ng-deep .p-card-content {
+  padding-top: 0;
+}
+
+.module-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.module-title {
+  font-size: 1.05rem;
+}
+
+.actions-cell {
+  text-align: right;
+  white-space: nowrap;
 }

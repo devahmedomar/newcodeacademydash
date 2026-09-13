@@ -1,199 +1,309 @@
-<div class="page-title">
-  <a class="btn btn-secondary btn-sm" routerLink="/students">← All students</a>
-  <h1>{{ profile()?.user?.name }}</h1>
-  <p class="muted">{{ profile()?.user?.email }}</p>
+<div class="page-header">
+  <div class="back-col">
+    <a routerLink="/students" class="back-link"><i class="pi pi-arrow-left"></i> All students</a>
+  </div>
+  <div class="title-col">
+    <h1 class="page-title">{{ profile()?.user?.name }}</h1>
+    <span class="muted">{{ profile()?.user?.email }}</span>
+  </div>
+  <div class="actions-col">
+    @if (profile()?.user; as u) {
+      <p-tag [value]="u.active ? 'Active' : 'Inactive'" [severity]="u.active ? 'success' : 'secondary'" />
+    }
+  </div>
 </div>
 
 @if (loading()) {
-  <div class="empty">Loading profile…</div>
+  <div class="state"><i class="pi pi-spin pi-spinner"></i><span>Loading profile…</span></div>
 } @else if (error()) {
-  <div class="alert alert-error">{{ error() }}</div>
-} @else {
+  <div class="state"><i class="pi pi-exclamation-triangle text-red"></i><span>{{ error() }}</span></div>
+} @else if (profile(); as p) {
   @if (formError()) {
-    <div class="alert alert-error">{{ formError() }}</div>
+    <p-message severity="error" class="w-full mb-3">{{ formError() }}</p-message>
   }
   @if (formOk()) {
-    <div class="alert alert-success">{{ formOk() }}</div>
+    <p-message severity="success" class="w-full mb-3">{{ formOk() }}</p-message>
   }
 
-  @if (profile()?.currentPayment; as cp) {
-    <div class="card payment-banner">
-      <div>
-        <strong>{{ cp.month }}</strong> — status
-        <span [class]="badgeClass(cp.status)">{{ cp.status }}</span>
-      </div>
-      <button class="btn btn-sm" (click)="setPaymentStatus(cp._id, 'paid')" [disabled]="cp.status === 'paid'">
-        Mark paid
-      </button>
-    </div>
-  }
-
-  <section class="card">
-    <h3>Add exam grade</h3>
-    <div class="field-grid">
-      <div>
-        <label class="label" for="exSubject">Subject</label>
-        <input class="input" id="exSubject" [(ngModel)]="examSubject" name="examSubject" placeholder="Math" />
-      </div>
-      <div>
-        <label class="label" for="exTitle">Title</label>
-        <input class="input" id="exTitle" [(ngModel)]="examTitle" name="examTitle" placeholder="Unit 1 test" />
-      </div>
-      <div>
-        <label class="label" for="exGrade">Grade</label>
-        <input class="input" id="exGrade" type="number" [(ngModel)]="examGrade" name="examGrade" />
-      </div>
-      <div>
-        <label class="label" for="exMax">Out of</label>
-        <input class="input" id="exMax" type="number" [(ngModel)]="examMaxGrade" name="examMaxGrade" />
-      </div>
-      <div>
-        <label class="label" for="exDate">Date</label>
-        <input class="input" id="exDate" type="date" [(ngModel)]="examDate" name="examDate" />
-      </div>
-      <div style="align-self:end">
-        <button class="btn" (click)="addExam()" [disabled]="!examTitle || !examSubject">Add</button>
-      </div>
-    </div>
-  </section>
-
-  <section class="card">
-    <h3>Add homework</h3>
-    <div class="field-grid">
-      <div>
-        <label class="label" for="hwTitle">Title</label>
-        <input class="input" id="hwTitle" [(ngModel)]="hwTitle" name="hwTitle" placeholder="Chapter 2 exercises" />
-      </div>
-      <div>
-        <label class="label" for="hwPoints">Points</label>
-        <input class="input" id="hwPoints" type="number" [(ngModel)]="hwPoints" name="hwPoints" />
-      </div>
-      <div>
-        <label class="label" for="hwMax">Max points</label>
-        <input class="input" id="hwMax" type="number" [(ngModel)]="hwMaxPoints" name="hwMaxPoints" />
-      </div>
-      <div>
-        <label class="label" for="hwFb">Feedback</label>
-        <input class="input" id="hwFb" [(ngModel)]="hwFeedback" name="hwFeedback" placeholder="Optional note" />
-      </div>
-      <div style="align-self:end">
-        <button class="btn" (click)="addHomework()" [disabled]="!hwTitle">Add</button>
-      </div>
-    </div>
-  </section>
-
-  <section class="card">
-    <h3>Payments</h3>
-    @if (profile()!.payments.length === 0) {
-      <div class="empty">No payment records yet.</div>
-    } @else {
-      <table>
-        <thead>
-          <tr>
-            <th>Month</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Paid on</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (p of profile()!.payments; track p._id) {
-            <tr>
-              <td><strong>{{ p.month }}</strong></td>
-              <td>{{ p.amount }} EGP</td>
-              <td><span [class]="badgeClass(p.status)">{{ p.status }}</span></td>
-              <td>{{ p.paidOn ? (p.paidOn | date: 'shortDate') : '—' }}</td>
-              <td>
-                @if (p.status !== 'paid') {
-                  <button class="btn btn-sm btn-secondary" (click)="setPaymentStatus(p._id, 'paid')">Paid</button>
-                }
-              </td>
-            </tr>
+  <div class="tabs-card">
+    <p-tabs value="exams">
+      <p-tablist>
+        <p-tab value="overview"><i class="pi pi-home"></i><span>Overview</span></p-tab>
+        <p-tab value="exams"><i class="pi pi-pencil"></i><span>Exams</span></p-tab>
+        <p-tab value="homework"><i class="pi pi-book"></i><span>Homework</span></p-tab>
+        <p-tab value="payments"><i class="pi pi-wallet"></i><span>Payments</span></p-tab>
+      </p-tablist>
+      <p-tabpanels>
+        <p-tabpanel value="overview">
+          @if (p.currentPayment; as cp) {
+            <div class="status-banner" [class.paid]="cp.status === 'paid'" [class.unpaid]="cp.status !== 'paid'">
+              <span class="status-icon" [class.icon-paid]="cp.status === 'paid'" [class.icon-unpaid]="cp.status !== 'paid'">
+                <i class="pi" [class]="cp.status === 'paid' ? 'pi-check' : 'pi-wallet'"></i>
+              </span>
+              <div class="status-body">
+                <strong>{{ cp.month }} — {{ cp.amount }} EGP</strong>
+                <span>{{ cp.status === 'paid' ? 'This payment has been settled.' : 'This payment is still pending.' }}</span>
+              </div>
+              <p-button label="Mark paid" icon="pi pi-check" severity="success" class="ml-auto"
+                        (onClick)="setPaymentStatus(cp._id, 'paid')" [disabled]="cp.status === 'paid'" />
+            </div>
           }
-        </tbody>
-      </table>
-    }
-    <div class="field-grid" style="margin-top:1rem">
-      <div>
-        <label class="label" for="payMonth">Month</label>
-        <input class="input" id="payMonth" type="month" [(ngModel)]="payMonth" name="payMonth" />
-      </div>
-      <div>
-        <label class="label" for="payAmount">Amount</label>
-        <input class="input" id="payAmount" type="number" [(ngModel)]="payAmount" name="payAmount" />
-      </div>
-      <div>
-        <label class="label" for="payStatus">Status</label>
-        <select class="select" id="payStatus" [(ngModel)]="payStatus" name="payStatus">
-          <option value="unpaid">Unpaid</option>
-          <option value="paid">Paid</option>
-          <option value="late">Late</option>
-        </select>
-      </div>
-      <div style="align-self:end">
-        <button class="btn btn-secondary" (click)="addPayment()">Add record</button>
-      </div>
-    </div>
-  </section>
 
-  <section class="card">
-    <h3>Exams</h3>
-    @if (profile()!.exams.length === 0) {
-      <div class="empty">No exams yet.</div>
-    } @else {
-      <table>
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Subject</th>
-            <th>Grade</th>
-            <th>%</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (e of profile()!.exams; track e._id) {
-            <tr>
-              <td>{{ e.title }}</td>
-              <td>{{ e.subject }}</td>
-              <td>{{ e.grade }} / {{ e.maxGrade }}</td>
-              <td><strong>{{ percent(e.grade, e.maxGrade) }}%</strong></td>
-              <td>{{ e.date | date: 'shortDate' }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-  </section>
+          <div class="stat-grid">
+            <p-card class="stat-card">
+              <div class="stat-inner">
+                <span class="stat-icon bg-blue-50 text-primary"><i class="pi pi-pencil"></i></span>
+                <div>
+                  <span class="stat-label">Exams</span>
+                  <strong class="stat-value">{{ p.exams.length }}</strong>
+                </div>
+              </div>
+            </p-card>
+            <p-card class="stat-card">
+              <div class="stat-inner">
+                <span class="stat-icon bg-green-50 text-green"><i class="pi pi-book"></i></span>
+                <div>
+                  <span class="stat-label">Homework</span>
+                  <strong class="stat-value">{{ p.homeworks.length }}</strong>
+                </div>
+              </div>
+            </p-card>
+            <p-card class="stat-card">
+              <div class="stat-inner">
+                <span class="stat-icon bg-amber-50 text-amber"><i class="pi pi-wallet"></i></span>
+                <div>
+                  <span class="stat-label">Payments</span>
+                  <strong class="stat-value">{{ p.payments.filter((x) => x.status === 'paid').length }}</strong>
+                </div>
+              </div>
+            </p-card>
+            <p-card class="stat-card">
+              <div class="stat-inner">
+                <span class="stat-icon bg-blue-50 text-primary"><i class="pi pi-video"></i></span>
+                <div>
+                  <span class="stat-label">Lessons</span>
+                  <strong class="stat-value">{{ p.lessons.length }}</strong>
+                </div>
+              </div>
+            </p-card>
+          </div>
 
-  <section class="card">
-    <h3>Homework</h3>
-    @if (profile()!.homeworks.length === 0) {
-      <div class="empty">No homework yet.</div>
-    } @else {
-      <table>
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Points</th>
-            <th>%</th>
-            <th>Submitted</th>
-            <th>Feedback</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (h of profile()!.homeworks; track h._id) {
-            <tr>
-              <td>{{ h.title }}</td>
-              <td>{{ h.points }} / {{ h.maxPoints }}</td>
-              <td><strong>{{ percent(h.points, h.maxPoints) }}%</strong></td>
-              <td>{{ h.submittedAt ? (h.submittedAt | date: 'shortDate') : '—' }}</td>
-              <td>{{ h.feedback || '—' }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-  </section>
+          <div class="summary-grid">
+            <p-card>
+              <div class="card-head"><span class="section-title">Performance</span></div>
+              <div class="summary-rows">
+                <div class="summary-row">
+                  <span>Exams average</span>
+                  <strong>{{ examsAverage() ?? '—' }}%</strong>
+                </div>
+                <div class="summary-row">
+                  <span>Homework average</span>
+                  <strong>{{ hwAverage() ?? '—' }}%</strong>
+                </div>
+              </div>
+            </p-card>
+            <p-card>
+              <div class="card-head"><span class="section-title">Enrolled</span></div>
+              <div class="summary-rows">
+                <div class="summary-row">
+                  <span>Since</span>
+                  <strong>{{ p.user.enrollmentDate | date: 'longDate' }}</strong>
+                </div>
+                <div class="summary-row">
+                  <span>Current period</span>
+                  <strong>{{ p.currentMonth }}</strong>
+                </div>
+              </div>
+            </p-card>
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel value="exams">
+          <div class="panel-grid">
+            <p-card class="form-card">
+              <div class="card-head"><span class="section-title">Add exam grade</span></div>
+              <div class="form-grid">
+                <div class="field span-2">
+                  <p-floatlabel>
+                    <input pInputText id="exTitle" class="w-full" [(ngModel)]="examTitle" name="examTitle" autocomplete="off" />
+                    <label for="exTitle">Title</label>
+                  </p-floatlabel>
+                </div>
+                <div class="field">
+                  <p-floatlabel>
+                    <input pInputText id="exSubject" class="w-full" [(ngModel)]="examSubject" name="examSubject" autocomplete="off" />
+                    <label for="exSubject">Subject</label>
+                  </p-floatlabel>
+                </div>
+                <div class="field">
+                  <p-floatlabel>
+                    <input pInputText id="exDate" type="date" class="w-full" [(ngModel)]="examDate" name="examDate" />
+                    <label for="exDate">Date</label>
+                  </p-floatlabel>
+                </div>
+                <div class="field">
+                  <p-floatlabel>
+                    <input pInputText id="exGrade" type="number" class="w-full" [(ngModel)]="examGrade" name="examGrade" />
+                    <label for="exGrade">Score</label>
+                  </p-floatlabel>
+                </div>
+                <div class="field">
+                  <p-floatlabel>
+                    <input pInputText id="exMax" type="number" class="w-full" [(ngModel)]="examMaxGrade" name="examMaxGrade" />
+                    <label for="exMax">Out of</label>
+                  </p-floatlabel>
+                </div>
+                <div class="field submit-col">
+                  <p-button label="Add exam" icon="pi pi-plus" severity="secondary" [outlined]="true"
+                            (onClick)="addExam()" [disabled]="!examTitle || !examSubject"
+                            [loading]="adding() === 'exam'" />
+                </div>
+              </div>
+            </p-card>
+
+            <p-card class="list-card">
+              <div class="card-head"><span class="section-title">Exam history</span></div>
+              @if (p.exams.length === 0) {
+                <div class="state">No exams recorded yet.</div>
+              } @else {
+                <p-table [value]="p.exams" [size]="'small'">
+                  <ng-template pTemplate="header">
+                    <tr><th>Title</th><th>Subject</th><th>Score</th><th>%</th><th>Date</th></tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-e>
+                    <tr>
+                      <td><strong>{{ e.title }}</strong></td>
+                      <td>{{ e.subject }}</td>
+                      <td>{{ e.grade }} / {{ e.maxGrade }}</td>
+                      <td><p-tag [value]="percent(e.grade, e.maxGrade) + '%'" [severity]="gradeSeverity(percent(e.grade, e.maxGrade))" /></td>
+                      <td>{{ e.date | date: 'shortDate' }}</td>
+                    </tr>
+                  </ng-template>
+                </p-table>
+              }
+            </p-card>
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel value="homework">
+          <div class="panel-grid">
+            <p-card class="form-card">
+              <div class="card-head"><span class="section-title">Add homework</span></div>
+              <div class="form-grid">
+                <div class="field span-2">
+                  <p-floatlabel>
+                    <input pInputText id="hwTitle" class="w-full" [(ngModel)]="hwTitle" name="hwTitle" autocomplete="off" />
+                    <label for="hwTitle">Title</label>
+                  </p-floatlabel>
+                </div>
+                <div class="field">
+                  <p-floatlabel>
+                    <input pInputText id="hwPoints" type="number" class="w-full" [(ngModel)]="hwPoints" name="hwPoints" />
+                    <label for="hwPoints">Points</label>
+                  </p-floatlabel>
+                </div>
+                <div class="field">
+                  <p-floatlabel>
+                    <input pInputText id="hwMax" type="number" class="w-full" [(ngModel)]="hwMaxPoints" name="hwMaxPoints" />
+                    <label for="hwMax">Max points</label>
+                  </p-floatlabel>
+                </div>
+                <div class="field span-2">
+                  <p-floatlabel>
+                    <input pInputText id="hwFb" class="w-full" [(ngModel)]="hwFeedback" name="hwFeedback" autocomplete="off" />
+                    <label for="hwFb">Feedback (optional)</label>
+                  </p-floatlabel>
+                </div>
+                <div class="field submit-col">
+                  <p-button label="Add homework" icon="pi pi-plus" severity="secondary" [outlined]="true"
+                            (onClick)="addHomework()" [disabled]="!hwTitle"
+                            [loading]="adding() === 'homework'" />
+                </div>
+              </div>
+            </p-card>
+
+            <p-card class="list-card">
+              <div class="card-head"><span class="section-title">Homework history</span></div>
+              @if (p.homeworks.length === 0) {
+                <div class="state">No homework recorded yet.</div>
+              } @else {
+                <p-table [value]="p.homeworks" [size]="'small'">
+                  <ng-template pTemplate="header">
+                    <tr><th>Title</th><th>Points</th><th>%</th><th>Submitted</th><th>Feedback</th></tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-h>
+                    <tr>
+                      <td><strong>{{ h.title }}</strong></td>
+                      <td>{{ h.points }} / {{ h.maxPoints }}</td>
+                      <td><p-tag [value]="percent(h.points, h.maxPoints) + '%'" [severity]="gradeSeverity(percent(h.points, h.maxPoints))" /></td>
+                      <td>{{ h.submittedAt ? (h.submittedAt | date: 'shortDate') : '—' }}</td>
+                      <td class="muted">{{ h.feedback || '—' }}</td>
+                    </tr>
+                  </ng-template>
+                </p-table>
+              }
+            </p-card>
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel value="payments">
+          <div class="panel-grid">
+            <p-card class="list-card">
+              <div class="card-head"><span class="section-title">Payment history</span></div>
+              @if (p.payments.length === 0) {
+                <div class="state">No payment records yet.</div>
+              } @else {
+                <p-table [value]="p.payments" [size]="'small'">
+                  <ng-template pTemplate="header">
+                    <tr><th>Month</th><th>Amount</th><th>Status</th><th>Paid on</th><th></th></tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-pay>
+                    <tr>
+                      <td><strong>{{ pay.month }}</strong></td>
+                      <td>{{ pay.amount }} EGP</td>
+                      <td><p-tag [value]="pay.status" [severity]="paymentSeverity(pay.status)" /></td>
+                      <td>{{ pay.paidOn ? (pay.paidOn | date: 'shortDate') : '—' }}</td>
+                      <td>
+                        @if (pay.status !== 'paid') {
+                          <p-button label="Mark paid" severity="secondary" [text]="true" size="small"
+                                    (onClick)="setPaymentStatus(pay._id, 'paid')" />
+                        }
+                      </td>
+                    </tr>
+                  </ng-template>
+                </p-table>
+              }
+            </p-card>
+
+            <p-card class="form-card">
+              <div class="card-head"><span class="section-title">Add payment record</span></div>
+              <div class="form-grid">
+                <div class="field">
+                  <p-floatlabel>
+                    <input pInputText id="payMonth" type="month" class="w-full" [(ngModel)]="payMonth" name="payMonth" />
+                    <label for="payMonth">Month</label>
+                  </p-floatlabel>
+                </div>
+                <div class="field">
+                  <p-floatlabel>
+                    <input pInputText id="payAmount" type="number" class="w-full" [(ngModel)]="payAmount" name="payAmount" />
+                    <label for="payAmount">Amount (EGP)</label>
+                  </p-floatlabel>
+                </div>
+                <div class="field span-2">
+                  <label class="select-label" for="payStatus">Status</label>
+                  <p-select id="payStatus" [options]="paymentStatuses" optionLabel="label" optionValue="value"
+                            [(ngModel)]="payStatus" name="payStatus" class="w-full" />
+                </div>
+                <div class="field submit-col">
+                  <p-button label="Add record" icon="pi pi-plus" severity="secondary" [outlined]="true"
+                            (onClick)="addPayment()" [disabled]="!payAmount" [loading]="adding() === 'payment'" />
+                </div>
+              </div>
+            </p-card>
+          </div>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  </div>
 }

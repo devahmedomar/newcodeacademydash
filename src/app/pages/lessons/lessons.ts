@@ -1,12 +1,21 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
+import { Card } from 'primeng/card';
+import { Tag } from 'primeng/tag';
+import { Button } from 'primeng/button';
+import { InputText } from 'primeng/inputtext';
+import { ToggleSwitch } from 'primeng/toggleswitch';
+import { FloatLabel } from 'primeng/floatlabel';
+import { Message } from 'primeng/message';
+import { Dialog } from 'primeng/dialog';
+import { TableModule } from 'primeng/table';
 import { DataService } from '../../services/data.service';
 import { Lesson } from '../../models';
 
 @Component({
   selector: 'app-lessons',
-  imports: [FormsModule, DatePipe],
+  imports: [FormsModule, DatePipe, Card, Tag, Button, InputText, ToggleSwitch, FloatLabel, Message, Dialog, TableModule],
   styleUrl: './lessons.css',
   templateUrl: './lessons.html',
 })
@@ -22,7 +31,7 @@ export class Lessons {
   addTitle = '';
   addVideo = '';
   addModule = '';
-  addOrder = 0;
+  addOrder = 1;
   addDescription = '';
   addPublished = true;
   adding = false;
@@ -43,10 +52,16 @@ export class Lessons {
     }
   }
 
-  toggleAdd() {
-    this.showAdd.set(!this.showAdd());
+  openAdd() {
+    this.addTitle = '';
+    this.addVideo = '';
     this.addModule = '';
     this.addOrder = this.lessons().length + 1;
+    this.addDescription = '';
+    this.addPublished = true;
+    this.success.set('');
+    this.error.set('');
+    this.showAdd.set(true);
   }
 
   async addLesson() {
@@ -61,9 +76,6 @@ export class Lessons {
         published: this.addPublished,
       });
       this.showAdd.set(false);
-      this.addTitle = '';
-      this.addVideo = '';
-      this.addDescription = '';
       this.success.set('Lesson added');
       await this.loadLessons();
     } catch (e) {
@@ -101,5 +113,9 @@ export class Lessons {
     return this.lessons()
       .filter((l) => l.module === module)
       .sort((a, b) => a.order - b.order);
+  }
+
+  publishSeverity(published: boolean): 'success' | 'secondary' {
+    return published ? 'success' : 'secondary';
   }
 }

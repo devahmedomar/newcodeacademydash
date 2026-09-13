@@ -1,17 +1,29 @@
 @if (auth.isTeacher()) {
   <header class="topbar">
-    <div class="brand">New Code Academy</div>
-    <nav class="nav">
-      <a routerLink="/students" routerLinkActive="active">Students</a>
-      <a routerLink="/lessons" routerLinkActive="active">Lessons</a>
+    <a routerLink="/students" class="brand">
+      <i class="pi pi-graduation-cap"></i>
+      <span>New Code Academy</span>
+      <span class="brand-badge">Teacher</span>
+    </a>
+    <nav class="topnav">
+      <a routerLink="/students" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }">
+        <i class="pi pi-users"></i><span>Students</span>
+      </a>
+      <a routerLink="/lessons" routerLinkActive="active">
+        <i class="pi pi-book"></i><span>Lessons</span>
+      </a>
     </nav>
-    <div class="user">
-      <span>{{ auth.user()?.name }}</span>
-      <button class="btn btn-secondary btn-sm" (click)="logout()">Log out</button>
+    <div class="user-row">
+      <span class="user-name">{{ auth.user()?.name }}</span>
+      <p-button [text]="true" [rounded]="true" severity="secondary"
+                [icon]="theme.isDark() === 'dark' ? 'pi pi-sun' : 'pi pi-moon'"
+                pTooltip="Toggle dark mode" tooltipPosition="bottom" (onClick)="theme.toggle()" />
+      <p-button icon="pi pi-sign-out" severity="secondary" [rounded]="true" [text]="true"
+                pTooltip="Log out" tooltipPosition="bottom" (onClick)="logout()" class="logout-btn" />
     </div>
   </header>
 }
 
-<main class="container">
+<main class="page">
   <router-outlet />
 </main>

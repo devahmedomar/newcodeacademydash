@@ -2,12 +2,20 @@ import { Component, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
+import { Card } from 'primeng/card';
+import { Tag } from 'primeng/tag';
+import { Button } from 'primeng/button';
+import { InputText } from 'primeng/inputtext';
+import { FloatLabel } from 'primeng/floatlabel';
+import { Message } from 'primeng/message';
+import { Dialog } from 'primeng/dialog';
+import { TableModule } from 'primeng/table';
 import { DataService } from '../../services/data.service';
 import { Student } from '../../models';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, FormsModule, DatePipe],
+  imports: [RouterLink, FormsModule, DatePipe, Card, Tag, Button, InputText, FloatLabel, Message, Dialog, TableModule],
   styleUrl: './dashboard.css',
   templateUrl: './dashboard.html',
 })
@@ -24,7 +32,6 @@ export class Dashboard {
   addPassword = '';
   addError = '';
   adding = false;
-  added = signal('');
 
   async ngOnInit() {
     await this.loadStudents();
@@ -42,9 +49,12 @@ export class Dashboard {
     }
   }
 
-  toggleAdd() {
-    this.showAdd.set(!this.showAdd());
-    this.added.set('');
+  openAdd() {
+    this.addError = '';
+    this.addName = '';
+    this.addEmail = '';
+    this.addPassword = '';
+    this.showAdd.set(true);
   }
 
   async addStudent() {
@@ -53,14 +63,15 @@ export class Dashboard {
     try {
       await this.data.registerStudent(this.addName, this.addEmail, this.addPassword);
       this.showAdd.set(false);
-      this.addName = '';
-      this.addEmail = '';
-      this.addPassword = '';
       await this.loadStudents();
     } catch (e) {
       this.addError = e instanceof Error ? e.message : 'Failed to add student';
     } finally {
       this.adding = false;
     }
+  }
+
+  severity(active: boolean): 'success' | 'secondary' {
+    return active ? 'success' : 'secondary';
   }
 }

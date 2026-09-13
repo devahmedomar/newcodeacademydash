@@ -1,24 +1,48 @@
 <div class="auth-wrap">
-  <form class="auth-card" (ngSubmit)="submit()">
-    <h1>Teacher Dashboard</h1>
-    <p class="sub">New Code Academy — sign in</p>
-
-    @if (error) {
-      <div class="alert alert-error">{{ error }}</div>
-    }
-
-    <div class="form-row">
-      <label class="label" for="email">Email</label>
-      <input class="input" id="email" type="email" [(ngModel)]="email" name="email" required autocomplete="email" />
+  <div class="auth-aside">
+    <div class="brand">
+      <i class="pi pi-graduation-cap"></i>
+      <span>New Code Academy</span>
     </div>
+    <h1>Run your academy from one screen.</h1>
+    <p>Add students, record grades and homework, track payments, and publish video lessons — all from this dashboard.</p>
+    <ul class="feature-list">
+      <li><i class="pi pi-users"></i> Student accounts and profiles</li>
+      <li><i class="pi pi-chart-bar"></i> Grades and homework tracking</li>
+      <li><i class="pi pi-wallet"></i> Payment status at a glance</li>
+      <li><i class="pi pi-video"></i> Lesson publishing per module</li>
+    </ul>
+  </div>
 
-    <div class="form-row">
-      <label class="label" for="password">Password</label>
-      <input class="input" id="password" type="password" [(ngModel)]="password" name="password" required autocomplete="current-password" />
-    </div>
-
-    <button class="btn" type="submit" style="width:100%" [disabled]="loading">
-      {{ loading ? 'Signing in…' : 'Sign in' }}
-    </button>
-  </form>
+  <div class="auth-main">
+    <p-card class="auth-card">
+      <ng-template pTemplate="title">
+        <div class="auth-card-title">
+          <h1>Teacher sign in</h1>
+          <p>Welcome back! Enter your details to continue.</p>
+        </div>
+      </ng-template>
+      <form (ngSubmit)="submit()">
+        @if (error) {
+          <p-message severity="error" class="w-full mb-3">{{ error }}</p-message>
+        }
+        <div class="field">
+          <p-floatlabel>
+            <input pInputText id="email" type="email" [(ngModel)]="email" name="email" required
+                   autocomplete="email" class="w-full" />
+            <label for="email">Email</label>
+          </p-floatlabel>
+        </div>
+        <div class="field">
+          <p-floatlabel>
+            <p-password id="password" [(ngModel)]="password" name="password" required
+                        [feedback]="false" [toggleMask]="true" autocomplete="current-password" class="w-full" />
+            <label for="password">Password</label>
+          </p-floatlabel>
+        </div>
+        <p-button type="submit" [label]="loading ? 'Signing in…' : 'Sign in'" [loading]="loading"
+                  icon="pi pi-arrow-right" iconPos="right" class="w-full" />
+      </form>
+    </p-card>
+  </div>
 </div>

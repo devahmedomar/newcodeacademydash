@@ -1,65 +1,77 @@
-<div class="page-title">
-  <h1>Students</h1>
-  <button class="btn" (click)="toggleAdd()">{{ showAdd() ? 'Cancel' : '+ Add student' }}</button>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Students</h1>
+    <p class="page-subtitle">Manage student accounts, grades, homework, and payments.</p>
+  </div>
+  <p-button [label]="'Add student'" icon="pi pi-plus"
+            (onClick)="openAdd()" class="add-btn" />
 </div>
 
-@if (error()) {
-  <div class="alert alert-error">{{ error() }}</div>
-}
-
-@if (showAdd()) {
-  <div class="card">
-    <h3>Add a student account</h3>
+<p-dialog [visible]="showAdd()" [modal]="true" [dismissableMask]="true" [closable]="true"
+          header="Add a student account" [style]="{ maxWidth: '440px', width: '90vw' }">
+  <div class="form-stack">
     @if (addError) {
-      <div class="alert alert-error">{{ addError }}</div>
+      <p-message severity="error" class="w-full">{{ addError }}</p-message>
     }
-    <div class="field-grid">
-      <div class="form-row">
-        <label class="label" for="sname">Full name</label>
-        <input class="input" id="sname" [(ngModel)]="addName" name="addName" required />
-      </div>
-      <div class="form-row">
-        <label class="label" for="semail">Email</label>
-        <input class="input" id="semail" type="email" [(ngModel)]="addEmail" name="addEmail" required />
-      </div>
-      <div class="form-row">
-        <label class="label" for="spass">Temporary password</label>
-        <input class="input" id="spass" [(ngModel)]="addPassword" name="addPassword" required />
-      </div>
+    <div class="field">
+      <p-floatlabel>
+        <input pInputText id="sname" class="w-full" [(ngModel)]="addName" name="addName" autocomplete="off" />
+        <label for="sname">Full name</label>
+      </p-floatlabel>
     </div>
-    <button class="btn" (click)="addStudent()" [disabled]="adding || !addName || !addEmail || !addPassword">
-      {{ adding ? 'Creating…' : 'Create account' }}
-    </button>
+    <div class="field">
+      <p-floatlabel>
+        <input pInputText id="semail" type="email" class="w-full" [(ngModel)]="addEmail" name="addEmail" autocomplete="off" />
+        <label for="semail">Email</label>
+      </p-floatlabel>
+    </div>
+    <div class="field">
+      <p-floatlabel>
+        <input pInputText id="spass" class="w-full" [(ngModel)]="addPassword" name="addPassword" autocomplete="new-password" />
+        <label for="spass">Temporary password</label>
+      </p-floatlabel>
+    </div>
   </div>
-}
+  <ng-template pTemplate="footer">
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showAdd.set(false)"/>
+    <p-button [label]="adding ? 'Creating…' : 'Create account'" [loading]="adding"
+              icon="pi pi-user-plus" (onClick)="addStudent()"
+              [disabled]="!addName || !addEmail || !addPassword" />
+  </ng-template>
+</p-dialog>
 
-<div class="card">
-  @if (loading()) {
-    <div class="empty">Loading students…</div>
-  } @else if (students().length === 0) {
-    <div class="empty">No students yet. Add your first one above.</div>
-  } @else {
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Enrolled</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (s of students(); track s._id) {
+@if (loading()) {
+  <div class="state"><i class="pi pi-spin pi-spinner"></i><span>Loading students…</span></div>
+} @else if (error()) {
+  <div class="state"><i class="pi pi-exclamation-triangle text-red"></i><span>{{ error() }}</span></div>
+} @else {
+  <p-card>
+    @if (students().length === 0) {
+      <div class="state">
+        <i class="pi pi-users"></i>
+        <span>No students yet. Click <strong>Add student</strong> to create your first account.</span>
+      </div>
+    } @else {
+      <p-table [value]="students()" [size]="'small'" [stripedRows]="true" styleClass="students-table">
+        <ng-template pTemplate="header">
+          <tr><th>Name</th><th>Email</th><th>Enrolled</th><th>Status</th><th></th></tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-s>
           <tr>
-            <td><strong>{{ s.name }}</strong></td>
-            <td>{{ s.email }}</td>
+            <td>
+              <span class="avatar" [class.text-primary]="true">{{ s.name[0] }}</span>
+              <strong>{{ s.name }}</strong>
+            </td>
+            <td class="muted">{{ s.email }}</td>
             <td>{{ s.enrollmentDate | date: 'MMM yyyy' }}</td>
-            <td style="text-align:right">
-              <a class="btn btn-secondary btn-sm" [routerLink]="['/students', s._id]">Open →</a>
+            <td><p-tag [value]="s.active ? 'Active' : 'Inactive'" [severity]="severity(s.active)" /></td>
+            <td>
+              <p-button label="Open" severity="secondary" [text]="true" icon="pi pi-angle-right" iconPos="right"
+                        [routerLink]="['/students', s._id]" class="open-btn" />
             </td>
           </tr>
-        }
-      </tbody>
-    </table>
-  }
-</div>
+        </ng-template>
+      </p-table>
+    }
+  </p-card>
+}

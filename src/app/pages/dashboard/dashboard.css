@@ -1,7 +1,44 @@
-.clickable {
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.form-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.field .p-inputtext {
+  width: 100%;
+}
+
+.field .p-floatlabel .p-inputtext {
+  width: 100%;
+}
+
+.students-table .p-datatable-row {
   cursor: pointer;
 }
 
-.clickable:hover {
-  background: var(--bg);
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--p-primary-100);
+  color: var(--p-primary-color);
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-right: 0.6rem;
+  vertical-align: middle;
+}
+
+.open-btn ::ng-deep .p-button {
+  padding: 0.35rem 0.6rem;
 }

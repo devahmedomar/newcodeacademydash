@@ -1,91 +1,100 @@
-<div class="page-title">
-  <h1>Lessons</h1>
-  <button class="btn" (click)="toggleAdd()">{{ showAdd() ? 'Cancel' : '+ Add lesson' }}</button>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Lessons</h1>
+    <p class="page-subtitle">Organize video lessons by module and control what students see.</p>
+  </div>
+  <p-button [label]="'Add lesson'" icon="pi pi-plus" (onClick)="openAdd()" />
 </div>
 
-@if (error()) {
-  <div class="alert alert-error">{{ error() }}</div>
-}
-@if (success()) {
-  <div class="alert alert-success">{{ success() }}</div>
-}
-
-@if (showAdd()) {
-  <div class="card">
-    <h3>New lesson</h3>
-    <div class="form-row">
-      <label class="label" for="lTitle">Lesson title</label>
-      <input class="input" id="lTitle" [(ngModel)]="addTitle" name="addTitle" placeholder="Variables in TypeScript" />
+<p-dialog [visible]="showAdd()" [modal]="true" [dismissableMask]="true" [closable]="true"
+          header="New lesson" [style]="{ maxWidth: '560px', width: '90vw' }">
+  <div class="form-stack">
+    @if (error()) {
+      <p-message severity="error" class="w-full">{{ error() }}</p-message>
+    }
+    <div class="field">
+      <p-floatlabel>
+        <input pInputText id="lTitle" class="w-full" [(ngModel)]="addTitle" name="addTitle" autocomplete="off" />
+        <label for="lTitle">Lesson title</label>
+      </p-floatlabel>
     </div>
     <div class="field-grid">
-      <div class="form-row">
-        <label class="label" for="lVideo">YouTube link or video ID</label>
-        <input class="input" id="lVideo" [(ngModel)]="addVideo" name="addVideo" placeholder="https://youtu.be/…" />
+      <div class="field">
+        <p-floatlabel>
+          <input pInputText id="lVideo" class="w-full" [(ngModel)]="addVideo" name="addVideo" autocomplete="off" />
+          <label for="lVideo">YouTube link or video ID</label>
+        </p-floatlabel>
       </div>
-      <div class="form-row">
-        <label class="label" for="lModule">Module / unit</label>
-        <input class="input" id="lModule" [(ngModel)]="addModule" name="addModule" placeholder="Module 1" />
+      <div class="field">
+        <p-floatlabel>
+          <input pInputText id="lModule" class="w-full" [(ngModel)]="addModule" name="addModule" autocomplete="off" />
+          <label for="lModule">Module / unit</label>
+        </p-floatlabel>
       </div>
-      <div class="form-row">
-        <label class="label" for="lOrder">Order</label>
-        <input class="input" id="lOrder" type="number" [(ngModel)]="addOrder" name="addOrder" />
+      <div class="field">
+        <p-floatlabel>
+          <input pInputText id="lOrder" type="number" class="w-full" [(ngModel)]="addOrder" name="addOrder" />
+          <label for="lOrder">Order</label>
+        </p-floatlabel>
       </div>
     </div>
-    <div class="form-row">
-      <label class="label" for="lDesc">Description</label>
-      <input class="input" id="lDesc" [(ngModel)]="addDescription" name="addDescription" placeholder="Optional" />
+    <div class="field">
+      <p-floatlabel>
+        <input pInputText id="lDesc" class="w-full" [(ngModel)]="addDescription" name="addDescription" autocomplete="off" />
+        <label for="lDesc">Description (optional)</label>
+      </p-floatlabel>
     </div>
-    <label style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
-      <input type="checkbox" [(ngModel)]="addPublished" name="addPublished" />
-      <span>Published (visible to students)</span>
-    </label>
-    <button class="btn" (click)="addLesson()" [disabled]="adding || !addTitle || !addVideo || !addModule">
-      {{ adding ? 'Adding…' : 'Add lesson' }}
-    </button>
+    <div class="toggle-row">
+      <p-toggleswitch [(ngModel)]="addPublished" name="addPublished" inputId="lPublished" />
+      <label for="lPublished">Published — visible to students</label>
+    </div>
   </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showAdd.set(false)" />
+    <p-button [label]="adding ? 'Adding…' : 'Add lesson'" [loading]="adding" icon="pi pi-plus"
+              (onClick)="addLesson()" [disabled]="!addTitle || !addVideo || !addModule" />
+  </ng-template>
+</p-dialog>
+
+@if (success()) {
+  <p-message severity="success" class="w-full mb-4">{{ success() }}</p-message>
 }
 
 @if (loading()) {
-  <div class="empty">Loading lessons…</div>
+  <div class="state"><i class="pi pi-spin pi-spinner"></i><span>Loading lessons…</span></div>
 } @else if (lessons().length === 0) {
-  <div class="empty">No lessons yet. Add your first YouTube lesson above.</div>
+  <div class="state">
+    <i class="pi pi-video"></i>
+    <span>No lessons yet. Click <strong>Add lesson</strong> to create your first YouTube lesson.</span>
+  </div>
 } @else {
   @for (module of modules(); track module) {
-    <section class="card">
-      <h3>{{ module }}</h3>
-      <table>
-        <thead>
+    <p-card class="module-card mb-4">
+      <div class="module-head">
+        <h3 class="module-title mb-0">{{ module }}</h3>
+        <p-tag [value]="byModule(module).length + ' lessons'" severity="secondary" />
+      </div>
+      <p-table [value]="byModule(module)" [size]="'small'" [stripedRows]="true">
+        <ng-template pTemplate="header">
+          <tr><th style="width:48px">#</th><th>Title</th><th>Video ID</th><th>Status</th><th>Uploaded</th><th></th></tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-l>
           <tr>
-            <th>#</th>
-            <th>Title</th>
-            <th>YouTube ID</th>
-            <th>Status</th>
-            <th>Uploaded</th>
-            <th></th>
+            <td class="muted">{{ l.order }}</td>
+            <td><strong>{{ l.title }}</strong></td>
+            <td class="muted">{{ l.youtubeVideoId }}</td>
+            <td><p-tag [value]="l.published ? 'Published' : 'Draft'" [severity]="publishSeverity(l.published)" /></td>
+            <td>{{ l.uploadDate | date: 'shortDate' }}</td>
+            <td class="actions-cell">
+              <p-button [icon]="l.published ? 'pi pi-eye-slash' : 'pi pi-eye'"
+                        [label]="l.published ? 'Unpublish' : 'Publish'"
+                        severity="secondary" [text]="true" size="small" (onClick)="togglePublish(l)" />
+              <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small"
+                        (onClick)="deleteLesson(l)" />
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          @for (l of byModule(module); track l._id) {
-            <tr>
-              <td>{{ l.order }}</td>
-              <td><strong>{{ l.title }}</strong></td>
-              <td>{{ l.youtubeVideoId }}</td>
-              <td>
-                <span [class]="l.published ? 'badge badge-published' : 'badge badge-draft'">
-                  {{ l.published ? 'published' : 'draft' }}
-                </span>
-              </td>
-              <td>{{ l.uploadDate | date: 'shortDate' }}</td>
-              <td style="text-align:right">
-                <button class="btn btn-secondary btn-sm" (click)="togglePublish(l)">
-                  {{ l.published ? 'Unpublish' : 'Publish' }}
-                </button>
-                <button class="btn btn-danger btn-sm" (click)="deleteLesson(l)">Delete</button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </section>
+        </ng-template>
+      </p-table>
+    </p-card>
   }
 }

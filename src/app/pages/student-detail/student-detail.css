@@ -1,12 +1,276 @@
-.muted {
-  color: var(--muted);
-  font-size: 0.9rem;
-  margin: 0;
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
 }
 
-.payment-banner {
+.back-col {
+  flex: 1;
+}
+
+.title-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.title-col .page-title {
+  margin-bottom: 0.1rem;
+}
+
+.actions-col {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--p-text-muted-color);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.back-link:hover {
+  color: var(--p-primary-color);
+}
+
+.tabs-card {
+  background: var(--p-surface-card);
+  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--p-content-border-radius);
+  padding: 0.75rem 1.25rem 1.5rem;
+}
+
+.status-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  border-radius: var(--p-content-border-radius);
+  padding: 1rem 1.1rem;
+  margin: 0.75rem 0 1.25rem;
+}
+
+.status-banner .status-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.status-banner .status-body {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+  flex: 1;
+}
+
+.status-body span {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.status-banner.paid {
+  background: var(--p-green-50);
+  border: 1px solid var(--p-green-200);
+  color: var(--p-green-900);
+}
+
+.status-banner .icon-paid {
+  background: var(--p-green-100);
+  color: var(--p-green-700);
+}
+
+.status-banner.unpaid {
+  background: var(--p-amber-50);
+  border: 1px solid var(--p-amber-200);
+  color: var(--p-amber-900);
+}
+
+.status-banner .icon-unpaid {
+  background: var(--p-amber-100);
+  color: var(--p-amber-700);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 720px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.stat-card {
+  height: 100%;
+}
+
+.stat-card ::ng-deep .p-card-body {
+  height: 100%;
+}
+
+.stat-card ::ng-deep .p-card-content {
+  height: 100%;
+}
+
+.stat-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.stat-inner > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  color: var(--p-text-muted-color);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card-head {
+  margin-bottom: 0.75rem;
+}
+
+.summary-rows {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.summary-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.summary-row span {
+  color: var(--p-text-muted-color);
+  font-size: 0.9rem;
+}
+
+.panel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.7fr;
+  gap: 1rem;
+  padding-top: 0.75rem;
+}
+
+@media (max-width: 800px) {
+  .panel-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+
+.form-grid .span-2 {
+  grid-column: span 2;
+}
+
+.form-card {
+  height: fit-content;
+}
+
+.form-card ::ng-deep .p-card-body {
+  height: 100%;
+}
+
+.form-card .field .p-inputtext {
+  width: 100%;
+}
+
+.form-card .field .p-floatlabel .p-inputtext {
+  width: 100%;
+}
+
+.field .p-select {
+  width: 100%;
+  display: flex;
+}
+
+.select-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--p-text-muted-color);
+  margin-bottom: 0.35rem;
+}
+
+.submit-col {
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 480px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-grid .span-2 {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .status-banner {
+    flex-wrap: wrap;
+  }
+  .status-banner .status-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .status-banner .status-body {
+    flex: 1 1 60%;
+  }
 }
