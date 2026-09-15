@@ -9,7 +9,13 @@ import { FloatLabel } from 'primeng/floatlabel';
 import { Message } from 'primeng/message';
 import { Dialog } from 'primeng/dialog';
 import { DataService } from '../../services/data.service';
-import { Lesson } from '../../models';
+import { Lesson, QuizQuestionFull } from '../../models';
+
+interface QuizRow {
+  question: string;
+  options: string[];
+  correct: number;
+}
 
 @Component({
   selector: 'app-lessons',
@@ -65,6 +71,16 @@ export class Lessons {
   showEdit = signal(false);
   editingLesson: Lesson | null = null;
   saving = false;
+
+  showQuiz = signal(false);
+  quizLesson = signal<Lesson | null>(null);
+  quizRows: QuizRow[] = [];
+  quizLoading = signal(false);
+  quizSaving = false;
+  quizMsg = signal('');
+  quizErr = signal('');
+
+  quizHasExisting = signal(false);
 
   async ngOnInit() {
     await this.loadLessons();
@@ -177,6 +193,107 @@ export class Lessons {
   countFor(m: string) {
     if (m === 'All') return this.lessons().length;
     return this.lessons().filter((l) => l.module === m).length;
+  }
+
+  private blankQuestion(): QuizRow {
+    return { question: '', options: ['', '', '', ''], correct: 0 };
+  }
+
+  async openQuizEditor(l: Lesson) {
+    this.quizLesson.set(l);
+    this.quizMsg.set('');
+    this.quizErr.set('');
+    this.quizRows = [this.blankQuestion()];
+    this.quizHasExisting.set(false);
+    this.showQuiz.set(true);
+    this.quizLoading.set(true);
+    try {
+      const quiz = await this.data.getLessonQuiz(l._id);
+      this.quizRows = quiz.questions.map((q) => ({ question: q.question, options: [...q.options], correct: q.correctIndex }));
+      this.quizHasExisting.set(true);
+    } catch (e) {
+      // no quiz yet — start with one blank question
+      if ((e as { status?: number }).status !== 404) {
+        this.quizErr.set(e instanceof Error ? e.message : 'Failed to load quiz');
+      }
+    } finally {
+      this.quizLoading.set(false);
+    }
+  }
+
+  addQuestion() {
+    this.quizRows.push(this.blankQuestion());
+  }
+
+  removeQuestion(ri: number) {
+    if (this.quizRows.length <= 1) return;
+    this.quizRows.splice(ri, 1);
+    this.quizRows = [...this.quizRows];
+  }
+
+  setOption(row: QuizRow, oi: number, value: string) {
+    row.options[oi] = value;
+  }
+
+  addOption(row: QuizRow) {
+    if (row.options.length >= 6) return;
+    row.options.push('');
+  }
+
+  removeOption(row: QuizRow, oi: number) {
+    if (row.options.length <= 2) return;
+    row.options.splice(oi, 1);
+    if (row.correct > row.options.length - 1) row.correct = row.options.length - 1;
+  }
+
+  canSaveQuiz() {
+    const filled = this.quizRows.filter((q) => {
+      const options = q.options.map((o) => o.trim()).filter(Boolean);
+      return q.question.trim() && options.length >= 2 && q.correct >= 0 && q.correct < q.options.length;
+    });
+    return filled.length === this.quizRows.length && this.quizRows.length > 0;
+  }
+
+  async saveQuiz() {
+    const l = this.quizLesson();
+    if (!l) return;
+    this.quizSaving = true;
+    this.quizErr.set('');
+    try {
+      const questions = this.quizRows.map((q) => {
+        const options = q.options.map((o) => o.trim()).filter(Boolean);
+        const correct = Math.min(Math.max(q.correct, 0), options.length - 1);
+        return { question: q.question.trim(), options, correctIndex: correct } as QuizQuestionFull;
+      });
+      await this.data.saveLessonQuiz(l._id, questions);
+      this.showQuiz.set(false);
+      this.success.set('Quiz saved');
+      this.quizHasExisting.set(true);
+      await this.loadLessons();
+    } catch (e) {
+      this.quizErr.set(e instanceof Error ? e.message : 'Failed to save quiz');
+    } finally {
+      this.quizSaving = false;
+    }
+  }
+
+  async deleteQuiz() {
+    const l = this.quizLesson();
+    if (!l) return;
+    if (!confirm(`Delete the quiz for "${l.title}"?`)) return;
+    this.quizSaving = true;
+    this.quizErr.set('');
+    try {
+      await this.data.deleteLessonQuiz(l._id);
+      this.showQuiz.set(false);
+      this.success.set('Quiz deleted');
+      this.quizHasExisting.set(false);
+      await this.loadLessons();
+    } catch (e) {
+      this.quizErr.set(e instanceof Error ? e.message : 'Failed to delete quiz');
+    } finally {
+      this.quizSaving = false;
+    }
   }
 
   thumbUrl(id: string) {

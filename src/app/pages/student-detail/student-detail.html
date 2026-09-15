@@ -31,6 +31,7 @@
         <p-tab value="overview"><i class="pi pi-home"></i><span>Overview</span></p-tab>
         <p-tab value="exams"><i class="pi pi-pencil"></i><span>Exams</span></p-tab>
         <p-tab value="homework"><i class="pi pi-book"></i><span>Homework</span></p-tab>
+        <p-tab value="quizzes"><i class="pi pi-question-circle"></i><span>Quizzes</span></p-tab>
         <p-tab value="payments"><i class="pi pi-wallet"></i><span>Payments</span></p-tab>
       </p-tablist>
       <p-tabpanels>
@@ -70,6 +71,15 @@
             </p-card>
             <p-card class="stat-card">
               <div class="stat-inner">
+                <span class="stat-icon bg-purple-50 text-primary"><i class="pi pi-question-circle"></i></span>
+                <div>
+                  <span class="stat-label">Quizzes</span>
+                  <strong class="stat-value">{{ p.quizAttempts.length }}</strong>
+                </div>
+              </div>
+            </p-card>
+            <p-card class="stat-card">
+              <div class="stat-inner">
                 <span class="stat-icon bg-amber-50 text-amber"><i class="pi pi-wallet"></i></span>
                 <div>
                   <span class="stat-label">Payments</span>
@@ -99,6 +109,10 @@
                 <div class="summary-row">
                   <span>Homework average</span>
                   <strong>{{ hwAverage() ?? '—' }}%</strong>
+                </div>
+                <div class="summary-row">
+                  <span>Quiz average</span>
+                  <strong>{{ quizAverage() ?? '—' }}%</strong>
                 </div>
               </div>
             </p-card>
@@ -225,6 +239,32 @@
                       <td><p-tag [value]="percent(h.points, h.maxPoints) + '%'" [severity]="gradeSeverity(percent(h.points, h.maxPoints))" /></td>
                       <td>{{ h.submittedAt ? (h.submittedAt | date: 'shortDate') : '—' }}</td>
                       <td class="muted">{{ h.feedback || '—' }}</td>
+                    </tr>
+                  </ng-template>
+                </p-table>
+              }
+            </p-card>
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel value="quizzes">
+          <div class="panel-grid">
+            <p-card class="list-card">
+              <div class="card-head"><span class="section-title">Quiz history</span></div>
+              @if (p.quizAttempts.length === 0) {
+                <div class="state">No quiz attempts recorded yet.</div>
+              } @else {
+                <p-table [value]="p.quizAttempts" [size]="'small'">
+                  <ng-template #header>
+                    <tr><th>Lesson</th><th>Module</th><th>Score</th><th>%</th><th>Date</th></tr>
+                  </ng-template>
+                  <ng-template #body let-a>
+                    <tr>
+                      <td><strong>{{ a.lessonTitle }}</strong></td>
+                      <td>{{ a.module }}</td>
+                      <td>{{ a.score }} / {{ a.total }}</td>
+                      <td><p-tag [value]="a.percent + '%'" [severity]="gradeSeverity(a.percent)" /></td>
+                      <td>{{ a.createdAt | date: 'shortDate' }}</td>
                     </tr>
                   </ng-template>
                 </p-table>

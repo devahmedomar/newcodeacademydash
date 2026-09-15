@@ -10,6 +10,8 @@ import {
   Payment,
   PaymentStatus,
   StudentProfile,
+  QuizFull,
+  QuizQuestionFull,
 } from '../models';
 
 @Injectable({ providedIn: 'root' })
@@ -78,5 +80,17 @@ export class DataService {
 
   updateLesson(id: string, body: Partial<Lesson>) {
     return this.api.put<Lesson>(`/api/lessons/${id}`, body);
+  }
+
+  getLessonQuiz(lessonId: string) {
+    return this.api.get<QuizFull>(`/api/lessons/${lessonId}/quiz`);
+  }
+
+  saveLessonQuiz(lessonId: string, questions: QuizQuestionFull[]) {
+    return this.api.put<QuizFull>(`/api/lessons/${lessonId}/quiz`, { questions });
+  }
+
+  deleteLessonQuiz(lessonId: string) {
+    return this.api.delete<void>(`/api/lessons/${lessonId}/quiz`);
   }
 }

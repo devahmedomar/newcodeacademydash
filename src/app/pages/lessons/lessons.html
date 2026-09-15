@@ -122,11 +122,18 @@
                   <span class="meta-sep"></span>
                   <i class="pi pi-hashtag"></i>
                   <span>{{ l.youtubeVideoId }}</span>
+                  @if (l.hasQuiz) {
+                    <span class="meta-sep"></span>
+                    <i class="pi pi-question-circle"></i>
+                    <span class="quiz-meta">Quiz</span>
+                  }
                 </div>
               </div>
               <div class="lesson-actions">
                 <p-toggleswitch [ngModel]="l.published" (ngModelChange)="togglePublish(l)"
                                 [inputId]="'pub-' + l._id" [name]="'pub-' + l._id" aria-label="Publish lesson" />
+                <p-button icon="pi pi-question-circle" severity="secondary" [text]="true" size="small"
+                          title="Edit quiz" aria-label="Edit quiz" (onClick)="openQuizEditor(l)" />
                 <p-button icon="pi pi-pencil" severity="secondary" [text]="true" size="small"
                           aria-label="Edit lesson" (onClick)="openEdit(l)" />
                 <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small"
@@ -237,5 +244,76 @@
     <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showEdit.set(false)" />
     <p-button [label]="saving ? 'Saving…' : 'Save changes'" [loading]="saving" icon="pi pi-check"
               (onClick)="saveLesson()" [disabled]="!addTitle || !addVideo || !addModule" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="showQuiz" [modal]="true" [dismissableMask]="true" [closable]="true"
+          [header]="'Quiz for: ' + (quizLesson()?.title ?? '')" [style]="{ maxWidth: '760px', width: '94vw' }">
+  <div class="quiz-editor">
+    @if (quizErr()) {
+      <p-message severity="error" class="w-full">{{ quizErr() }}</p-message>
+    }
+    @if (quizLoading()) {
+      <div class="quiz-loading"><i class="pi pi-spin pi-spinner"></i> Loading quiz…</div>
+    } @else {
+      <div class="quiz-toolbar">
+        <span class="quiz-count">{{ quizRows.length }} question{{ quizRows.length === 1 ? '' : 's' }}</span>
+        <p-button label="Add question" severity="secondary" [text]="true" icon="pi pi-plus"
+                  size="small" (onClick)="addQuestion()" />
+      </div>
+      <div class="quiz-questions">
+        @for (row of quizRows; track $index; let ri = $index) {
+          <div class="qq-card">
+            <div class="qq-head">
+              <span class="qq-num">Q{{ ri + 1 }}</span>
+              <div class="qq-question-input">
+                <p-floatlabel>
+                  <input pInputText class="w-full" [value]="row.question" name="q-{{ ri }}"
+                         autocomplete="off" (input)="row.question = $any($event.target).value" />
+                  <label>Question text</label>
+                </p-floatlabel>
+              </div>
+              <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small"
+                        aria-label="Remove question" [disabled]="quizRows.length <= 1"
+                        (onClick)="removeQuestion(ri)" />
+            </div>
+            <div class="qq-options">
+              @for (opt of row.options; track $index; let oi = $index) {
+                <div class="qq-opt">
+                  <input type="radio" class="qq-radio" [name]="'correct-' + ri" [value]="oi"
+                         [checked]="row.correct === oi"
+                         (change)="row.correct = oi"
+                         [attr.title]="'Set as correct answer'" />
+                  <div class="qq-opt-input">
+                    <p-floatlabel>
+                      <input pInputText class="w-full" [value]="opt" name="opt-{{ ri }}-{{ oi }}"
+                             autocomplete="off" (input)="setOption(row, oi, $any($event.target).value)" />
+                      <label>Option {{ oi + 1 }}</label>
+                    </p-floatlabel>
+                  </div>
+                  <p-button icon="pi pi-times" severity="secondary" [text]="true" size="small"
+                            aria-label="Remove option" [disabled]="row.options.length <= 2"
+                            (onClick)="removeOption(row, oi)" />
+                </div>
+              }
+              @if (row.options.length < 6) {
+                <button type="button" class="qq-add-opt" (click)="addOption(row)">
+                  <i class="pi pi-plus"></i> Add option
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+  <ng-template #footer>
+    @if (quizHasExisting()) {
+      <p-button label="Delete quiz" severity="danger" [text]="true" icon="pi pi-trash"
+                [loading]="quizSaving" (onClick)="deleteQuiz()" />
+    }
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showQuiz.set(false)" />
+    <p-button [label]="quizSaving ? 'Saving…' : 'Save quiz'" [loading]="quizSaving" icon="pi pi-check"
+              (onClick)="saveQuiz()" [disabled]="quizLoading() || !canSaveQuiz()" />
   </ng-template>
 </p-dialog>

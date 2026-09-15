@@ -63,6 +63,31 @@ export interface Lesson {
   module: string;
   published: boolean;
   uploadDate: string;
+  hasQuiz?: boolean;
+}
+
+export interface QuizQuestionFull {
+  question: string;
+  options: string[];
+  correctIndex: number;
+}
+
+export interface QuizFull {
+  _id: string;
+  lessonId: string;
+  questions: QuizQuestionFull[];
+}
+
+export interface QuizAttemptSummary {
+  _id: string;
+  quizId: string;
+  lessonId: string;
+  lessonTitle: string;
+  module: string;
+  score: number;
+  total: number;
+  percent: number;
+  createdAt: string;
 }
 
 export type PaymentStatus = 'paid' | 'unpaid' | 'late';
@@ -83,6 +108,7 @@ export interface StudentProfile {
   homeworks: Homework[];
   payments: Payment[];
   lessons: Lesson[];
+  quizAttempts: QuizAttemptSummary[];
   currentMonth: string;
   currentPayment: Payment | null;
 }
