@@ -80,6 +80,15 @@
             </p-card>
             <p-card class="stat-card">
               <div class="stat-inner">
+                <span class="stat-icon bg-cyan-50 text-primary"><i class="pi pi-star"></i></span>
+                <div>
+                  <span class="stat-label">Points</span>
+                  <strong class="stat-value">{{ p.points.total.earned }} / {{ p.points.total.possible }}</strong>
+                </div>
+              </div>
+            </p-card>
+            <p-card class="stat-card">
+              <div class="stat-inner">
                 <span class="stat-icon bg-amber-50 text-amber"><i class="pi pi-wallet"></i></span>
                 <div>
                   <span class="stat-label">Payments</span>
@@ -102,6 +111,22 @@
             <p-card>
               <div class="card-head"><span class="section-title">Performance</span></div>
               <div class="summary-rows">
+                <div class="summary-row">
+                  <span>Exams points</span>
+                  <strong>{{ p.points.exams.earned }} / {{ p.points.exams.possible }}</strong>
+                </div>
+                <div class="summary-row">
+                  <span>Homework points</span>
+                  <strong>{{ p.points.homeworks.earned }} / {{ p.points.homeworks.possible }}</strong>
+                </div>
+                <div class="summary-row">
+                  <span>Quiz points</span>
+                  <strong>{{ p.points.quizzes.earned }} / {{ p.points.quizzes.possible }}</strong>
+                </div>
+                <div class="summary-row">
+                  <span>Total points</span>
+                  <strong>{{ p.points.total.earned }} / {{ p.points.total.possible }} ({{ p.points.total.percent }}%)</strong>
+                </div>
                 <div class="summary-row">
                   <span>Exams average</span>
                   <strong>{{ examsAverage() ?? '—' }}%</strong>

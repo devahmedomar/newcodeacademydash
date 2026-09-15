@@ -198,7 +198,7 @@ export class StudentDetail {
   }
 
   quizAverage() {
-    const q = this.profile()?.quizAttempts ?? [];
+    const q = this.profile()?.quizBestAttempts ?? [];
     if (q.length === 0) return null;
     const total = q.reduce((acc, a) => acc + a.percent, 0);
     return Math.round(total / q.length);

@@ -90,6 +90,18 @@ export interface QuizAttemptSummary {
   createdAt: string;
 }
 
+export interface PointsBucket {
+  earned: number;
+  possible: number;
+}
+
+export interface PointsSummary {
+  total: PointsBucket & { percent: number };
+  quizzes: PointsBucket;
+  homeworks: PointsBucket;
+  exams: PointsBucket;
+}
+
 export type PaymentStatus = 'paid' | 'unpaid' | 'late';
 
 export interface Payment {
@@ -109,6 +121,8 @@ export interface StudentProfile {
   payments: Payment[];
   lessons: Lesson[];
   quizAttempts: QuizAttemptSummary[];
+  quizBestAttempts: QuizAttemptSummary[];
+  points: PointsSummary;
   currentMonth: string;
   currentPayment: Payment | null;
 }

@@ -144,6 +144,8 @@ a {
 .bg-amber-50 { background: var(--p-amber-50); }
 .bg-red-50 { background: var(--p-red-50); }
 .bg-blue-50 { background: var(--p-blue-50); }
+.bg-purple-50 { background: var(--p-purple-50); }
+.bg-cyan-50 { background: var(--p-cyan-50); }
 
 /* ---------- Empty & loading states ---------- */
 
