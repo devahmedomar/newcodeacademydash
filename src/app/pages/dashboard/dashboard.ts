@@ -26,6 +26,7 @@ export class Dashboard {
   students = signal<Student[]>([]);
   loading = signal(true);
   error = signal('');
+  actionMsg = signal('');
 
   showAdd = signal(false);
   addName = '';
@@ -33,6 +34,14 @@ export class Dashboard {
   addPassword = '';
   addError = '';
   adding = false;
+
+  showReset = signal(false);
+  resetTarget: Student | null = null;
+  resetPassword = '';
+  resetError = '';
+  resetting = false;
+  deleting = signal('');
+  restoring = signal('');
 
   exams = signal<ExamTemplate[]>([]);
   selectedExamId = signal('');
@@ -58,6 +67,7 @@ export class Dashboard {
   async loadStudents() {
     this.loading.set(true);
     this.error.set('');
+    this.actionMsg.set('');
     try {
       this.students.set(await this.data.listStudents());
     } catch (e) {
@@ -87,13 +97,72 @@ export class Dashboard {
     this.addError = '';
     this.adding = true;
     try {
-      await this.data.registerStudent(this.addName, this.addEmail, this.addPassword);
+      const name = this.addName;
+      await this.data.registerStudent(name, this.addEmail, this.addPassword);
       this.showAdd.set(false);
       await this.loadStudents();
+      this.actionMsg.set(`Student ${name} created`);
     } catch (e) {
       this.addError = e instanceof Error ? e.message : 'Failed to add student';
     } finally {
       this.adding = false;
+    }
+  }
+
+  openReset(s: Student) {
+    this.resetTarget = s;
+    this.resetPassword = '';
+    this.resetError = '';
+    this.actionMsg.set('');
+    this.showReset.set(true);
+  }
+
+  async resetPasswordForTarget() {
+    const s = this.resetTarget;
+    if (!s) return;
+    this.resetError = '';
+    this.resetting = true;
+    try {
+      await this.data.resetStudentPassword(s._id, this.resetPassword);
+      this.actionMsg.set(`Password reset for ${s.name}`);
+      this.showReset.set(false);
+      this.resetTarget = null;
+    } catch (e) {
+      this.resetError = e instanceof Error ? e.message : 'Failed to reset password';
+    } finally {
+      this.resetting = false;
+    }
+  }
+
+  async deleteStudent(s: Student) {
+    const ok = confirm(
+      `Deactivate ${s.name}? Their login will be disabled and they'll be hidden from students, but every grade, homework, payment and quiz record is kept so they can be restored later.`
+    );
+    if (!ok) return;
+    this.actionMsg.set('');
+    this.deleting.set(s._id);
+    try {
+      await this.data.deleteStudent(s._id);
+      await this.loadStudents();
+      this.actionMsg.set(`Student ${s.name} deactivated`);
+    } catch (e) {
+      this.error.set(e instanceof Error ? e.message : 'Failed to deactivate student');
+    } finally {
+      this.deleting.set('');
+    }
+  }
+
+  async restoreStudent(s: Student) {
+    this.actionMsg.set('');
+    this.restoring.set(s._id);
+    try {
+      await this.data.restoreStudent(s._id);
+      await this.loadStudents();
+      this.actionMsg.set(`Student ${s.name} restored`);
+    } catch (e) {
+      this.error.set(e instanceof Error ? e.message : 'Failed to restore student');
+    } finally {
+      this.restoring.set('');
     }
   }
 

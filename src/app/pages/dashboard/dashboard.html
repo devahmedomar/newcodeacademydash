@@ -7,6 +7,10 @@
             (onClick)="openAdd()" class="add-btn" />
 </div>
 
+@if (actionMsg()) {
+  <p-message severity="success" class="w-full mb-3">{{ actionMsg() }}</p-message>
+}
+
 @if (exams().length > 0 && students().length > 0) {
   <p-card class="grade-card">
     <div class="grade-head">
@@ -110,6 +114,31 @@
   </ng-template>
 </p-dialog>
 
+@if (showReset() && resetTarget; as rs) {
+  <p-dialog [(visible)]="showReset" [modal]="true" [dismissableMask]="true" [closable]="true"
+            [header]="'Reset password — ' + rs.name" [style]="{ maxWidth: '420px', width: '90vw' }">
+    <div class="form-stack">
+      @if (resetError) {
+        <p-message severity="error" class="w-full">{{ resetError }}</p-message>
+      }
+      <div class="field">
+        <p-floatlabel>
+          <input pInputText id="rpPass" type="password" class="w-full" [(ngModel)]="resetPassword"
+                 name="resetPassword" autocomplete="new-password" />
+          <label for="rpPass">New password</label>
+        </p-floatlabel>
+      </div>
+      <p class="reset-note">The student will need to sign in with this new password.</p>
+    </div>
+    <ng-template #footer>
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showReset.set(false)" />
+      <p-button [label]="resetting ? 'Saving…' : 'Set password'" [loading]="resetting"
+                icon="pi pi-check" (onClick)="resetPasswordForTarget()"
+                [disabled]="resetPassword.length < 6" />
+    </ng-template>
+  </p-dialog>
+}
+
 @if (loading()) {
   <div class="state"><i class="pi pi-spin pi-spinner"></i><span>Loading students…</span></div>
 } @else if (error()) {
@@ -125,7 +154,7 @@
       <p-table [value]="students()" [size]="'small'" [stripedRows]="true" styleClass="students-table"
                [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" [showCurrentPageReport]="false">
         <ng-template #header>
-          <tr><th>Name</th><th>Email</th><th>Enrolled</th><th>Status</th><th></th></tr>
+          <tr><th>Name</th><th>Email</th><th>Enrolled</th><th>Status</th><th style="width: 19rem"></th></tr>
         </ng-template>
         <ng-template #body let-s>
           <tr>
@@ -137,8 +166,23 @@
             <td>{{ s.enrollmentDate | date: 'MMM yyyy' }}</td>
             <td><p-tag [value]="s.active ? 'Active' : 'Inactive'" [severity]="severity(s.active)" /></td>
             <td>
-              <p-button label="Open" severity="secondary" [text]="true" icon="pi pi-angle-right" iconPos="right"
-                        [routerLink]="['/students', s._id]" class="open-btn" />
+              <div class="row-actions">
+                <p-button label="Reset password" severity="secondary" [text]="true" size="small"
+                          icon="pi pi-key" (onClick)="openReset(s)" />
+                @if (s.active) {
+                  <p-button label="Delete" severity="danger" [text]="true" size="small"
+                            icon="pi pi-trash" (onClick)="deleteStudent(s)"
+                            [loading]="deleting() === s._id"
+                            [disabled]="deleting() !== '' || restoring() !== ''" />
+                } @else {
+                  <p-button label="Restore" severity="success" [text]="true" size="small"
+                            icon="pi pi-refresh" (onClick)="restoreStudent(s)"
+                            [loading]="restoring() === s._id"
+                            [disabled]="restoring() !== '' || deleting() !== ''" />
+                }
+                <p-button label="Open" severity="secondary" [text]="true" icon="pi pi-angle-right" iconPos="right"
+                          [routerLink]="['/students', s._id]" class="open-btn" />
+              </div>
             </td>
           </tr>
         </ng-template>

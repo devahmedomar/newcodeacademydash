@@ -26,6 +26,18 @@ export class DataService {
     return this.api.post<{ user: Student }>('/auth/register', { name, email, password });
   }
 
+  resetStudentPassword(id: string, password: string) {
+    return this.api.put<{ message: string }>(`/api/students/${id}/password`, { password });
+  }
+
+  deleteStudent(id: string) {
+    return this.api.delete<{ message: string }>(`/api/students/${id}`);
+  }
+
+  restoreStudent(id: string) {
+    return this.api.put<{ message: string }>(`/api/students/${id}/restore`, {});
+  }
+
   getProfile(id: string) {
     return this.api.get<StudentProfile>(`/api/students/${id}`);
   }

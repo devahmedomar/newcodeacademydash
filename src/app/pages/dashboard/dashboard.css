@@ -69,6 +69,8 @@
 .score-input { max-width: 6rem; }
 .score-actions { display: flex; align-items: center; gap: .5rem; }
 .grade-empty { padding: .6rem 0 0; }
+.row-actions { display: flex; align-items: center; gap: .15rem; flex-wrap: wrap; }
+.reset-note { margin: 0; font-size: .8rem; color: var(--p-text-muted-color); }
 @media (max-width: 720px) {
   .grade-head { flex-direction: column; align-items: stretch; }
   .exam-picker { min-width: 100%; }
