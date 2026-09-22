@@ -172,7 +172,7 @@
                 <p-button icon="pi pi-ellipsis-v" [text]="true" severity="secondary"
                           pTooltip="More actions" tooltipPosition="top"
                           (click)="menu.toggle($event)" aria-label="More actions" role="button" />
-                <p-menu #menu [model]="rowMenuItems(s)" popup="true" />
+                <p-menu #menu [model]="rowMenuItems(s)" popup="true" appendTo="body" />
               </div>
             </td>
           </tr>
