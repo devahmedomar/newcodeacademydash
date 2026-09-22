@@ -1,11 +1,14 @@
 @if (auth.isTeacher()) {
   <header class="topbar">
-    <a routerLink="/students" class="brand">
+    <a routerLink="/home" class="brand">
       <i class="pi pi-graduation-cap"></i>
       <span>New Code Academy</span>
       <span class="brand-badge">Teacher</span>
     </a>
     <nav class="topnav">
+      <a routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <i class="pi pi-home"></i><span>Home</span>
+      </a>
       <a routerLink="/students" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }">
         <i class="pi pi-users"></i><span>Students</span>
       </a>
@@ -16,6 +19,7 @@
         <i class="pi pi-clipboard"></i><span>Exams</span>
       </a>
     </nav>
+    <app-quick-find />
     <div class="user-row">
       <span class="user-name">{{ auth.user()?.name }}</span>
       <p-button [text]="true" [rounded]="true" severity="secondary"

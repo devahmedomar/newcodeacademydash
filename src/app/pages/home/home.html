@@ -1,0 +1,166 @@
+<div class="page-header">
+  <div>
+    <div class="title-row">
+      <h1 class="page-title">Welcome back</h1>
+    </div>
+    <p class="page-subtitle">One glance at your academy — jump in with a click or press <strong>Ctrl K</strong> to search anything.</p>
+  </div>
+  <span class="title-badge"><i class="pi pi-calendar"></i> {{ now | date: 'EEEE, MMM d' }}</span>
+</div>
+
+@if (loading()) {
+  <div class="state"><i class="pi pi-spin pi-spinner"></i><span>Loading your overview…</span></div>
+} @else {
+  @if (error()) {
+    <p-message severity="warn" class="w-full mb-4">{{ error() }}</p-message>
+  }
+
+  <div class="stat-grid">
+    <p-card class="stat-card">
+      <div class="stat-row">
+        <span class="stat-icon icon-blue"><i class="pi pi-users"></i></span>
+        <div>
+          <span class="stat-label">Active students</span>
+          <strong class="stat-value">{{ activeStudents() }}</strong>
+        </div>
+      </div>
+      <button type="button" class="stat-link" (click)="go('/students')">View students <i class="pi pi-angle-right"></i></button>
+    </p-card>
+    <p-card class="stat-card">
+      <div class="stat-row">
+        <span class="stat-icon icon-green"><i class="pi pi-globe"></i></span>
+        <div>
+          <span class="stat-label">Published lessons</span>
+          <strong class="stat-value">{{ publishedLessons() }} <span class="stat-sub">/ {{ lessons().length }}</span></strong>
+        </div>
+      </div>
+      <button type="button" class="stat-link" (click)="go('/lessons')">Manage lessons <i class="pi pi-angle-right"></i></button>
+    </p-card>
+    <p-card class="stat-card">
+      <div class="stat-row">
+        <span class="stat-icon icon-primary"><i class="pi pi-clipboard"></i></span>
+        <div>
+          <span class="stat-label">Exams set up</span>
+          <strong class="stat-value">{{ exams().length }}</strong>
+        </div>
+      </div>
+      <button type="button" class="stat-link" (click)="go('/exams')">Manage exams <i class="pi pi-angle-right"></i></button>
+    </p-card>
+    <p-card class="stat-card">
+      <div class="stat-row">
+        <span class="stat-icon icon-amber"><i class="pi pi-money-bill"></i></span>
+        <div>
+          <span class="stat-label">Unpaid this month</span>
+          <strong class="stat-value" [class.text-red]="unpaidPayments().length > 0">{{ unpaidPayments().length }}</strong>
+        </div>
+      </div>
+      @if (unpaidPayments().length > 0) {
+        <button type="button" class="stat-link" (click)="go('/students')">Collect below <i class="pi pi-angle-down"></i></button>
+      }
+    </p-card>
+  </div>
+
+  <div class="home-grid">
+    <section>
+      @if (pendingGradeExams().length > 0) {
+        <div class="panel-head">
+          <h2 class="section-title"><i class="pi pi-pencil-square head-icon"></i> Grading to do</h2>
+        </div>
+        <div class="focus-list">
+          @for (item of pendingGradeExams(); track item.e._id) {
+            <button type="button" class="focus-row" (click)="go('/students', { grade: item.e._id })">
+              <span class="focus-icon icon-amber"><i class="pi pi-clipboard"></i></span>
+              <span class="focus-body">
+                <strong>{{ item.e.title }}</strong>
+                <span class="muted">{{ item.e.subject }} · {{ item.remaining }} of {{ activeStudents() }} students left</span>
+              </span>
+              <span class="focus-progress">
+                <span class="muted">{{ percent(item.e.gradedCount, activeStudents()) }}%</span>
+                <i class="pi pi-angle-right"></i>
+              </span>
+            </button>
+          }
+        </div>
+      } @else if (!loading()) {
+        <div class="panel-head">
+          <h2 class="section-title"><i class="pi pi-check-circle head-icon icon-green"></i> Grading</h2>
+        </div>
+        <div class="empty-box">
+          <i class="pi pi-check"></i>
+          <span>No exams waiting on grades right now.</span>
+          <button type="button" class="link-btn" (click)="go('/exams', { new: '1' })">Create a new exam</button>
+        </div>
+      }
+
+      @if (unpaidPayments().length > 0) {
+        <div class="panel-head">
+          <h2 class="section-title"><i class="pi pi-money-bill head-icon icon-amber" style="color:var(--p-amber-600)"></i> Unpaid — this month</h2>
+          <span class="panel-count">{{ unpaidPayments().length }}</span>
+        </div>
+        <div class="focus-list">
+          @for (p of unpaidPayments(); track p._id) {
+            <button type="button" class="focus-row" (click)="go('/students/' + p.studentId._id)">
+              <span class="focus-icon icon-amber"><i class="pi pi-user"></i></span>
+              <span class="focus-body">
+                <strong>{{ p.studentId.name }}</strong>
+                <span class="muted">{{ p.amount.toLocaleString() }} EGP · {{ p.month }}</span>
+              </span>
+              <span class="focus-progress">
+                <p-tag [value]="p.status === 'late' ? 'Late' : 'Unpaid'" [severity]="paymentTag(p.status)" />
+                <i class="pi pi-angle-right"></i>
+              </span>
+            </button>
+          }
+        </div>
+      }
+    </section>
+
+    <aside>
+      <p-card class="quick-card">
+        <div class="panel-head">
+          <h2 class="section-title"><i class="pi pi-bolt head-icon icon-primary"></i> Quick actions</h2>
+        </div>
+        <div class="qa-grid">
+          <button type="button" class="qa-btn" (click)="go('/students', { new: '1' })">
+            <span class="qa-icon icon-green"><i class="pi pi-user-plus"></i></span>
+            <span>Add a student</span>
+          </button>
+          <button type="button" class="qa-btn" (click)="go('/students')">
+            <span class="qa-icon icon-amber"><i class="pi pi-pencil-square"></i></span>
+            <span>Grade an exam</span>
+          </button>
+          <button type="button" class="qa-btn" (click)="go('/lessons', { new: '1' })">
+            <span class="qa-icon icon-primary"><i class="pi pi-plus"></i></span>
+            <span>Add a lesson</span>
+          </button>
+          <button type="button" class="qa-btn" (click)="go('/exams', { new: '1' })">
+            <span class="qa-icon icon-blue"><i class="pi pi-plus"></i></span>
+            <span>New exam</span>
+          </button>
+        </div>
+        <p class="qa-hint">Tip: press <kbd>Ctrl</kbd> + <kbd>K</kbd> anywhere to search or jump.</p>
+      </p-card>
+
+      <p-card class="modules-card">
+        <div class="panel-head">
+          <h2 class="section-title"><i class="pi pi-th-large head-icon icon-blue"></i> Lesson modules</h2>
+        </div>
+        @if (recentLessonModules().length === 0) {
+          <div class="empty-box">
+            <i class="pi pi-book"></i>
+            <span>No lessons yet.</span>
+          </div>
+        } @else {
+          <div class="module-list">
+            @for (m of recentLessonModules(); track m.module) {
+              <button type="button" class="module-row" (click)="go('/lessons', { module: m.module })">
+                <span class="module-name">{{ m.module }}</span>
+                <span class="module-count">{{ m.count }}</span>
+              </button>
+            }
+          </div>
+        }
+      </p-card>
+    </aside>
+  </div>
+}

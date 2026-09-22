@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { Card } from 'primeng/card';
 import { Button } from 'primeng/button';
@@ -20,6 +21,7 @@ import { ExamTemplate } from '../../models';
 })
 export class Exams {
   private data = inject(DataService);
+  private route = inject(ActivatedRoute);
 
   exams = signal<ExamTemplate[]>([]);
   loading = signal(true);
@@ -47,6 +49,7 @@ export class Exams {
 
   async ngOnInit() {
     await this.loadExams();
+    if (this.route.snapshot.queryParamMap.get('new') === '1') this.openAdd();
   }
 
   async loadExams() {

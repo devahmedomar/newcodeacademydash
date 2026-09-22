@@ -5,6 +5,7 @@ import {
   Exam,
   ExamTemplate,
   ExamGradesResponse,
+  PaymentWithStudent,
   Homework,
   Lesson,
   Payment,
@@ -76,6 +77,10 @@ export class DataService {
 
   updatePayment(id: string, body: Partial<Payment>) {
     return this.api.put<Payment>(`/api/payments/${id}`, body);
+  }
+
+  listPayments() {
+    return this.api.get<PaymentWithStudent[]>('/api/payments');
   }
 
   listLessons() {

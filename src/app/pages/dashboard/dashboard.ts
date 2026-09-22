@@ -1,6 +1,6 @@
 import { Component, signal, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { Card } from 'primeng/card';
 import { Tag } from 'primeng/tag';
@@ -11,17 +11,21 @@ import { Message } from 'primeng/message';
 import { Dialog } from 'primeng/dialog';
 import { TableModule } from 'primeng/table';
 import { Select } from 'primeng/select';
+import { Menu } from 'primeng/menu';
+import { Tooltip } from 'primeng/tooltip';
+import { MenuItem } from 'primeng/api';
 import { DataService } from '../../services/data.service';
 import { Student, ExamTemplate } from '../../models';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, FormsModule, DatePipe, Card, Tag, Button, InputText, FloatLabel, Message, Dialog, TableModule, Select],
+  imports: [RouterLink, FormsModule, DatePipe, Card, Tag, Button, InputText, FloatLabel, Message, Dialog, TableModule, Select, Menu, Tooltip],
   styleUrl: './dashboard.css',
   templateUrl: './dashboard.html',
 })
 export class Dashboard {
   private data = inject(DataService);
+  private route = inject(ActivatedRoute);
 
   students = signal<Student[]>([]);
   loading = signal(true);
@@ -62,6 +66,18 @@ export class Dashboard {
 
   async ngOnInit() {
     await Promise.all([this.loadStudents(), this.loadExams()]);
+    const q = this.route.snapshot.queryParamMap;
+    if (q.get('new') === '1') this.openAdd();
+    const grade = q.get('grade');
+    if (grade && this.exams().some((e) => e._id === grade)) {
+      this.selectedExamId.set(grade);
+      this._loadGrades();
+    }
+    if (grade || q.get('grade')) {
+      window.setTimeout(() => {
+        document.getElementById('grade-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
   }
 
   async loadStudents() {
@@ -167,11 +183,22 @@ export class Dashboard {
   }
 
   async onExamChange(id: string) {
+    this.selectedExamId.set(id);
+    if (!id) {
+      this.gradesByStudent.set({});
+      this.gradeInputs.set({});
+      return;
+    }
+    await this._loadGrades();
+  }
+
+  private async _loadGrades() {
+    const id = this.selectedExamId();
+    if (!id) return;
     this.gradingErr.set('');
     this.gradingMsg.set('');
     this.gradesByStudent.set({});
     this.gradeInputs.set({});
-    if (!id) return;
     this.gradeLoading.set(true);
     try {
       const res = await this.data.listExamGrades(id);
@@ -247,5 +274,18 @@ export class Dashboard {
 
   severity(active: boolean): 'success' | 'secondary' {
     return active ? 'success' : 'secondary';
+  }
+
+  rowMenuItems(s: Student): MenuItem[] {
+    const items: MenuItem[] = [
+      { label: 'Open profile', icon: 'pi pi-user', routerLink: ['/students', s._id] },
+    ];
+    if (s.active) {
+      items.push({ label: 'Reset password', icon: 'pi pi-key', command: () => this.openReset(s) });
+      items.push({ label: 'Deactivate', icon: 'pi pi-user-minus', command: () => this.deleteStudent(s) });
+    } else {
+      items.push({ label: 'Restore', icon: 'pi pi-refresh', command: () => this.restoreStudent(s) });
+    }
+    return items;
   }
 }

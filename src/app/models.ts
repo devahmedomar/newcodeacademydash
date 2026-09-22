@@ -104,6 +104,11 @@ export interface PointsSummary {
 
 export type PaymentStatus = 'paid' | 'unpaid' | 'late';
 
+export interface PaymentWithStudent extends Omit<Payment, 'studentId' | 'markedBy'> {
+  studentId: { _id: string; name: string; email: string };
+  markedBy: string;
+}
+
 export interface Payment {
   _id: string;
   studentId: string;

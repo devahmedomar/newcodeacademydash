@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { Card } from 'primeng/card';
 import { Button } from 'primeng/button';
@@ -25,6 +26,7 @@ interface QuizRow {
 })
 export class Lessons {
   private data = inject(DataService);
+  private route = inject(ActivatedRoute);
 
   lessons = signal<Lesson[]>([]);
   loading = signal(true);
@@ -84,6 +86,13 @@ export class Lessons {
 
   async ngOnInit() {
     await this.loadLessons();
+    const q = this.route.snapshot.queryParamMap;
+    if (q.get('new') === '1') {
+      this.openAdd();
+    } else {
+      const module = q.get('module');
+      if (module && this.modules().includes(module)) this.selectedModule.set(module);
+    }
   }
 
   async loadLessons() {

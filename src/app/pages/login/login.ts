@@ -28,7 +28,7 @@ export class Login {
     this.loading = true;
     try {
       const user = await this.auth.login(this.email, this.password);
-      if (user.role === 'teacher') this.router.navigate(['/students']);
+      if (user.role === 'teacher') this.router.navigate(['/home']);
       else this.error = 'Students should use the Student Portal.';
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'Login failed';

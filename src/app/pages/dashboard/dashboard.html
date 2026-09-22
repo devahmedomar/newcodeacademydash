@@ -12,7 +12,7 @@
 }
 
 @if (exams().length > 0 && students().length > 0) {
-  <p-card class="grade-card">
+  <p-card class="grade-card" id="grade-panel">
     <div class="grade-head">
       <div class="grade-heading">
         <span class="grade-icon"><i class="pi pi-pencil-square"></i></span>
@@ -154,7 +154,7 @@
       <p-table [value]="students()" [size]="'small'" [stripedRows]="true" styleClass="students-table"
                [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" [showCurrentPageReport]="false">
         <ng-template #header>
-          <tr><th>Name</th><th>Email</th><th>Enrolled</th><th>Status</th><th style="width: 19rem"></th></tr>
+          <tr><th>Name</th><th>Email</th><th>Enrolled</th><th>Status</th><th style="width: 12rem"></th></tr>
         </ng-template>
         <ng-template #body let-s>
           <tr>
@@ -167,21 +167,12 @@
             <td><p-tag [value]="s.active ? 'Active' : 'Inactive'" [severity]="severity(s.active)" /></td>
             <td>
               <div class="row-actions">
-                <p-button label="Reset password" severity="secondary" [text]="true" size="small"
-                          icon="pi pi-key" (onClick)="openReset(s)" />
-                @if (s.active) {
-                  <p-button label="Delete" severity="danger" [text]="true" size="small"
-                            icon="pi pi-trash" (onClick)="deleteStudent(s)"
-                            [loading]="deleting() === s._id"
-                            [disabled]="deleting() !== '' || restoring() !== ''" />
-                } @else {
-                  <p-button label="Restore" severity="success" [text]="true" size="small"
-                            icon="pi pi-refresh" (onClick)="restoreStudent(s)"
-                            [loading]="restoring() === s._id"
-                            [disabled]="restoring() !== '' || deleting() !== ''" />
-                }
-                <p-button label="Open" severity="secondary" [text]="true" icon="pi pi-angle-right" iconPos="right"
+                <p-button [label]="s.active ? 'Open' : 'View'" severity="secondary" [text]="true" icon="pi pi-angle-right" iconPos="right"
                           [routerLink]="['/students', s._id]" class="open-btn" />
+                <p-button icon="pi pi-ellipsis-v" [text]="true" severity="secondary"
+                          pTooltip="More actions" tooltipPosition="top"
+                          (click)="menu.toggle($event)" aria-label="More actions" role="button" />
+                <p-menu #menu [model]="rowMenuItems(s)" popup="true" />
               </div>
             </td>
           </tr>

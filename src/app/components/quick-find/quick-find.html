@@ -1,0 +1,66 @@
+<button type="button" class="qf-trigger" (click)="toggle()" aria-label="Search or jump to">
+  <i class="pi pi-search"></i>
+  <span class="qf-trigger-label">Search or jump to…</span>
+  <kbd class="qf-kbd">Ctrl K</kbd>
+</button>
+
+@if (open()) {
+  <div class="qf-backdrop" (click)="close()" (keydown)="onKeydown($event)" tabindex="-1"></div>
+  <div class="qf-panel" role="dialog" aria-label="Command search">
+    <div class="qf-input-wrap">
+      <i class="pi pi-search"></i>
+      <input
+        #box
+        pInputText
+        class="qf-input"
+        placeholder="Search students, lessons, exams…"
+        [value]="query()"
+        (input)="query.set($any($event.target).value)"
+        (keydown)="onInputKeydown($event)"
+        [autocomplete]="'off'"
+        (mousedown)="$event.stopPropagation()"
+      />
+      <kbd class="qf-kbd">esc</kbd>
+    </div>
+
+    @if (allItems().length === 0) {
+      <div class="qf-empty">
+        <i class="pi pi-search"></i>
+        <span>No results for “{{ query() }}”</span>
+      </div>
+    } @else {
+      <div class="qf-groups">
+        @for (group of activeGroups(); track group.label) {
+          <div class="qf-group">
+            <div class="qf-group-label">{{ group.label }}</div>
+            @for (item of group.items; track item.id; let i = $index) {
+              <button
+                type="button"
+                class="qf-item"
+                [class.active]="(selectedIndex() === flatIndex(group, i))"
+                (mouseenter)="selectedIndex.set(flatIndex(group, i))"
+                (mousedown)="$event.preventDefault()"
+                (click)="selectItem(flatIndex(group, i))"
+              >
+                <span class="qf-item-icon"><i [class]="item.icon"></i></span>
+                <span class="qf-item-body">
+                  <span class="qf-item-label">{{ item.label }}</span>
+                  @if (item.sub) {
+                    <span class="qf-item-sub">{{ item.sub }}</span>
+                  }
+                </span>
+                <i class="pi pi-angle-right qf-item-go"></i>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <div class="qf-footer">
+      <span><kbd class="qf-kbd">↑</kbd><kbd class="qf-kbd">↓</kbd> navigate</span>
+      <span><kbd class="qf-kbd">↵</kbd> open</span>
+      <span><kbd class="qf-kbd">esc</kbd> close</span>
+    </div>
+  </div>
+}

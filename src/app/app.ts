@@ -4,10 +4,11 @@ import { Button } from 'primeng/button';
 import { Tooltip } from 'primeng/tooltip';
 import { AuthService } from './services/auth.service';
 import { ThemeService } from './services/theme.service';
+import { QuickFind } from './components/quick-find/quick-find';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Button, Tooltip],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Button, Tooltip, QuickFind],
   styleUrl: './app.css',
   templateUrl: './app.html',
 })
