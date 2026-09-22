@@ -31,6 +31,15 @@ export class Dashboard {
   loading = signal(true);
   error = signal('');
   actionMsg = signal('');
+  search = signal('');
+
+  filteredStudents = computed(() => {
+    const q = this.search().trim().toLowerCase();
+    if (!q) return this.students();
+    return this.students().filter(
+      (s) => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q),
+    );
+  });
 
   showAdd = signal(false);
   addName = '';

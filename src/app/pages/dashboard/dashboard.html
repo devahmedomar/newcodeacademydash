@@ -151,8 +151,34 @@
         <span>No students yet. Click <strong>Add student</strong> to create your first account.</span>
       </div>
     } @else {
-      <p-table [value]="students()" [size]="'small'" [stripedRows]="true" styleClass="students-table"
-               [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" [showCurrentPageReport]="false">
+      <div class="students-toolbar">
+        <div class="search-box">
+          <i class="pi pi-search"></i>
+          <input pInputText type="text" placeholder="Search by name or email…"
+                 [value]="search()" (input)="search.set($any($event.target).value)"
+                 [attr.aria-label]="'Search students'" />
+          @if (search()) {
+            <button type="button" class="clear-btn" (click)="search.set('')" aria-label="Clear search">
+              <i class="pi pi-times"></i>
+            </button>
+          }
+        </div>
+        <span class="students-count">
+          @if (search()) {
+            {{ filteredStudents().length }} of {{ students().length }} students
+          } @else {
+            {{ students().length }} students
+          }
+        </span>
+      </div>
+      @if (filteredStudents().length === 0) {
+        <div class="state search-empty">
+          <i class="pi pi-user-minus"></i>
+          <span>No student matches “{{ search() }}”.</span>
+        </div>
+      } @else {
+        <p-table [value]="filteredStudents()" [size]="'small'" [stripedRows]="true" styleClass="students-table"
+                 [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" [showCurrentPageReport]="false">
         <ng-template #header>
           <tr><th>Name</th><th>Email</th><th>Enrolled</th><th>Status</th><th style="width: 12rem"></th></tr>
         </ng-template>
@@ -178,6 +204,7 @@
           </tr>
         </ng-template>
       </p-table>
+      }
     }
   </p-card>
 }

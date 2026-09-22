@@ -71,6 +71,20 @@
 .grade-empty { padding: .6rem 0 0; }
 .row-actions { display: flex; align-items: center; gap: .15rem; flex-wrap: wrap; }
 .reset-note { margin: 0; font-size: .8rem; color: var(--p-text-muted-color); }
+
+.students-toolbar { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-bottom: .9rem; }
+.search-box { position: relative; flex: 1; max-width: 26rem; }
+.search-box i { position: absolute; left: .8rem; top: 50%; translate: 0 -50%; color: var(--p-text-muted-color); font-size: .85rem; }
+.search-box .p-inputtext { padding-left: 2.5rem; padding-right: 2.2rem; width: 100%; }
+.clear-btn { position: absolute; right: .5rem; top: 50%; translate: 0 -50%; display: flex; align-items: center; justify-content: center; width: 1.4rem; height: 1.4rem; border: none; background: transparent; color: var(--p-text-muted-color); cursor: pointer; border-radius: 50%; }
+.clear-btn:hover { color: var(--p-text-color); background: var(--p-surface-200); }
+.students-count { font-size: .78rem; color: var(--p-text-muted-color); margin-left: auto; white-space: nowrap; }
+.search-empty { padding: 1.5rem 1rem; }
+@media (max-width: 640px) {
+  .students-toolbar { flex-direction: column; align-items: stretch; }
+  .search-box { max-width: 100%; }
+  .students-count { margin-left: 0; align-self: flex-end; }
+}
 @media (max-width: 720px) {
   .grade-head { flex-direction: column; align-items: stretch; }
   .exam-picker { min-width: 100%; }
