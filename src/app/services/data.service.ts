@@ -6,6 +6,7 @@ import {
   ExamTemplate,
   ExamGradesResponse,
   PaymentWithStudent,
+  HomeworkWithStudent,
   Homework,
   Lesson,
   Payment,
@@ -69,6 +70,10 @@ export class DataService {
 
   createHomework(body: Omit<Homework, '_id'>) {
     return this.api.post<Homework>('/api/homework', body);
+  }
+
+  listHomework() {
+    return this.api.get<HomeworkWithStudent[]>('/api/homework');
   }
 
   createPayment(body: { studentId: string; month: string; amount: number; status: PaymentStatus }) {

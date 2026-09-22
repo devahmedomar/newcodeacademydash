@@ -54,6 +54,10 @@ export interface Homework {
   feedback?: string;
 }
 
+export interface HomeworkWithStudent extends Omit<Homework, 'studentId'> {
+  studentId: { _id: string; name: string; email: string };
+}
+
 export interface Lesson {
   _id: string;
   title: string;

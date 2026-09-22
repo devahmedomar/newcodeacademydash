@@ -1,0 +1,22 @@
+.title-row{display:flex;align-items:center;gap:.7rem}
+.title-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.25rem .7rem;font-size:.75rem;font-weight:600;letter-spacing:.02em;color:var(--p-green-600);background:color-mix(in srgb,var(--p-green-500) 12%,transparent);border-radius:999px}
+.title-badge i{font-size:.7rem}
+
+.group-title{display:flex;align-items:center;gap:.5rem;margin:1.4rem 0 .8rem;font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;color:var(--p-text-muted-color)}
+.group-dot{font-size:.4rem}
+
+.report-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(19rem,1fr));gap:1rem}
+.report-card ::ng-deep .p-card-body{padding:1.15rem 1.2rem;display:flex;flex-direction:column;gap:.8rem}
+.report-card ::ng-deep .p-card-body .p-button{width:100%;justify-content:center}
+.report-head{display:flex;align-items:flex-start;justify-content:space-between}
+.report-icon{width:2.7rem;height:2.7rem;border-radius:.8rem;display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0}
+.icon-primary{color:var(--p-primary-color);background:color-mix(in srgb,var(--p-primary-color) 12%,transparent)}
+.icon-green{color:var(--p-green-600);background:color-mix(in srgb,var(--p-green-500) 14%,transparent)}
+.icon-amber{color:var(--p-amber-600);background:color-mix(in srgb,var(--p-amber-500) 14%,transparent)}
+.icon-blue{color:var(--p-blue-600);background:color-mix(in srgb,var(--p-blue-500) 14%,transparent)}
+.icon-purple{color:var(--p-purple-600);background:color-mix(in srgb,var(--p-purple-500) 14%,transparent)}
+.icon-cyan{color:var(--p-cyan-600);background:color-mix(in srgb,var(--p-cyan-500) 14%,transparent)}
+.icon-red{color:var(--p-red-500);background:color-mix(in srgb,var(--p-red-500) 12%,transparent)}
+.report-count{font-size:.72rem;font-weight:700;padding:.15rem .55rem;border-radius:999px;color:var(--p-text-muted-color);background:var(--p-surface-100)}
+.report-title{font-size:.95rem}
+.report-desc{margin:0 0 .15rem;font-size:.82rem;color:var(--p-text-muted-color);line-height:1.5}

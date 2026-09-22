@@ -1,0 +1,46 @@
+<div class="page-header">
+  <div>
+    <div class="title-row">
+      <h1 class="page-title">Reports</h1>
+      <span class="title-badge"><i class="pi pi-file-excel"></i> Excel export</span>
+    </div>
+    <p class="page-subtitle">Download ready-to-use Excel reports about your academy — run one, open the file, done.</p>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="state"><i class="pi pi-spin pi-spinner"></i><span>Preparing reports…</span></div>
+} @else {
+  @if (error()) {
+    <p-message severity="error" class="w-full mb-4">{{ error() }}</p-message>
+  }
+  @if (done()) {
+    <p-message severity="success" class="w-full mb-4">{{ done() }}</p-message>
+  }
+
+  @for (group of ['Finance', 'Students', 'Teaching']; track group) {
+    <h2 class="group-title"><i class="pi pi-circle-fill group-dot"></i>{{ group }}</h2>
+    <div class="report-grid">
+      @for (r of reports; track r.id) {
+        @if (r.group === group) {
+          <p-card class="report-card">
+            <div class="report-head">
+              <span class="report-icon" [class]="'icon-' + r.tone"><i [class]="'pi ' + r.icon"></i></span>
+              @if (countFor(r.id) != null) {
+                <span class="report-count">{{ countFor(r.id) }}</span>
+              }
+            </div>
+            <strong class="report-title">{{ r.title }}</strong>
+            <p class="report-desc">{{ r.desc }}</p>
+            <p-button [label]="busy() === r.id ? 'Preparing…' : 'Download Excel'"
+                      [icon]="busy() === r.id ? 'pi pi-spin pi-spinner' : 'pi pi-download'"
+                      [loading]="busy() === r.id"
+                      [disabled]="busy() !== ''"
+                      severity="secondary"
+                      (onClick)="run(r)" />
+          </p-card>
+        }
+      }
+    </div>
+  }
+}

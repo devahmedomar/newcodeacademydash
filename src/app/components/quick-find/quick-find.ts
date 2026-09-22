@@ -125,6 +125,7 @@ export class QuickFind {
       { id: 'p-students', label: 'Students', icon: 'pi pi-users', path: '/students' },
       { id: 'p-lessons', label: 'Lessons', icon: 'pi pi-book', path: '/lessons' },
       { id: 'p-exams', label: 'Exams', icon: 'pi pi-clipboard', path: '/exams' },
+      { id: 'p-reports', label: 'Reports', icon: 'pi pi-file-excel', path: '/reports' },
     ];
     return {
       label: 'Pages',

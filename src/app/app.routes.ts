@@ -14,6 +14,11 @@ export const routes: Routes = [
   { path: 'students/:id', component: StudentDetail, canActivate: [authGuard] },
   { path: 'lessons', component: Lessons, canActivate: [authGuard] },
   { path: 'exams', component: Exams, canActivate: [authGuard] },
+  {
+    path: 'reports',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/reports/reports').then((m) => m.Reports),
+  },
   { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: '**', redirectTo: 'home' },
 ];
