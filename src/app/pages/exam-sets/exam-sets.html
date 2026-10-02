@@ -1,0 +1,1042 @@
+<div class="page-header">
+  <div class="title-row">
+    <h1>AI Exams</h1>
+    <span class="title-badge"><i class="pi pi-sparkles"></i> Teacher review before anything reaches a student</span>
+  </div>
+  <p-button label="New exam set" icon="pi pi-plus" (onClick)="openCreate()"
+            [disabled]="readyBooks().length === 0"
+            [pTooltip]="readyBooks().length === 0 ? 'Transcribe a book PDF first — exam sets are built from its pages' : ''"
+            tooltipPosition="bottom" />
+</div>
+
+@if (readyBooks().length === 0 && !loading()) {
+  <p-message severity="warn">
+    No book is ready yet. Exam sets are generated from the pages of a transcribed book,
+    so transcribe a PDF in Books first.
+  </p-message>
+}
+
+@if (error()) {
+  <p-message severity="error" class="msg">{{ error() }}</p-message>
+}
+@if (success()) {
+  <p-message severity="success" class="msg">{{ success() }}</p-message>
+}
+
+@if (loading()) {
+  <div class="loading"><p-progressspinner strokeWidth="4" [style]="{ width: '2.2rem', height: '2.2rem' }" /></div>
+} @else if (sets().length === 0) {
+  <div class="empty">
+    <i class="pi pi-sparkles"></i>
+    <h3>No exam sets yet</h3>
+    <p>Pick a page range from a transcribed book, and Gemini will build you several distinct
+      papers from those pages. You review every question before it can be used.</p>
+    <p-button label="Create the first exam set" icon="pi pi-plus" (onClick)="openCreate()"
+              [disabled]="readyBooks().length === 0" />
+  </div>
+} @else {
+  <div class="stat-grid">
+    <div class="stat-card">
+      <p-card>
+        <div class="stat-row">
+          <div class="stat-icon icon-primary"><i class="pi pi-folder"></i></div>
+          <div>
+            <span class="stat-label">Exam sets</span>
+            <span class="stat-value">{{ sets().length }}</span>
+          </div>
+        </div>
+      </p-card>
+    </div>
+    <div class="stat-card">
+      <p-card>
+        <div class="stat-row">
+          <div class="stat-icon icon-green"><i class="pi pi-file"></i></div>
+          <div>
+            <span class="stat-label">Forms built</span>
+            <span class="stat-value">{{ formsBuilt() }}</span>
+          </div>
+        </div>
+      </p-card>
+    </div>
+    <div class="stat-card">
+      <p-card>
+        <div class="stat-row">
+          <div class="stat-icon icon-amber"><i class="pi pi-exclamation-triangle"></i></div>
+          <div>
+            <span class="stat-label">Flagged questions</span>
+            <span class="stat-value">{{ flaggedTotal() }}</span>
+          </div>
+        </div>
+      </p-card>
+    </div>
+    <div class="stat-card">
+      <p-card>
+        <div class="stat-row">
+          <div class="stat-icon icon-blue"><i class="pi pi-book"></i></div>
+          <div>
+            <span class="stat-label">Books ready</span>
+            <span class="stat-value">{{ readyBooks().length }}</span>
+          </div>
+        </div>
+      </p-card>
+    </div>
+  </div>
+
+  <div class="set-list">
+    @for (set of sets(); track set._id) {
+      <div class="set-row">
+        <div class="set-main">
+          <div class="set-title-line">
+            <h3 class="set-title">{{ set.title }}</h3>
+            <p-tag [value]="set.status" [severity]="statusSeverity(set.status)" />
+            @if (!set.hasBlueprint) {
+              <p-tag value="no blueprint" severity="warn" />
+            }
+            @if (set.formsBuilt !== set.formLabels.length) {
+              <p-tag [value]="(set.formsBuilt ?? 0) + '/' + set.formLabels.length + ' forms'" severity="info" />
+            }
+          </div>
+          <div class="set-meta">
+            <span><i class="pi pi-book"></i> {{ set.book?.title ?? 'Book' }}</span>
+            <span><i class="pi pi-file"></i> pages {{ set.pageFrom }}–{{ set.pageTo }}</span>
+            <span><i class="pi pi-list"></i> {{ set.mcqCount }} MCQ + {{ set.shortCount }} short</span>
+            <span><i class="pi pi-copy"></i> {{ set.formCount }} form{{ set.formCount === 1 ? '' : 's' }}</span>
+            <span><i class="pi pi-flag"></i> {{ set.difficulty }}</span>
+            <span><i class="pi pi-percentage"></i> pass {{ set.passPercent }}%</span>
+            @if (set.timeLimitMinutes) {
+              <span><i class="pi pi-clock"></i> {{ set.timeLimitMinutes }} min</span>
+            }
+            @if (set.weekLabel) {
+              <span><i class="pi pi-calendar"></i> {{ set.weekLabel }}</span>
+            }
+          </div>
+          <div class="progress-block">
+            <p-progressbar [value]="setProgress(set) * 100" [showValue]="false" [style]="{ height: '.4rem' }" />
+            <span class="progress-label">
+              {{ set.formsBuilt ?? 0 }} of {{ set.formLabels.length }} forms
+              @if (set.maxGrade) { · max grade {{ set.maxGrade }} }
+              @if (set.questions) { · {{ set.questions }} questions }
+            </span>
+          </div>
+        </div>
+        <div class="set-actions">
+          <p-button icon="pi pi-eye" label="Open" size="small" (onClick)="openDetail(set._id)" />
+          <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small"
+                    aria-label="Delete exam set" (onClick)="removeSet(set)" />
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- Create ------------------------------------------------------------------ -->
+<p-dialog header="New exam set" [modal]="true" [draggable]="false"
+          [style]="{ width: '44rem', maxWidth: '95vw' }"
+          [visible]="showCreate()" (visibleChange)="showCreate.set($event)">
+  <div class="form-stack">
+    @if (createError()) {
+      <p-message severity="error">{{ createError() }}</p-message>
+    }
+
+    <div class="field">
+      <label class="field-label" for="esBook">Book</label>
+      <p-select inputId="esBook" [options]="readyBooks()" optionLabel="title" optionValue="_id"
+                [(ngModel)]="draft.bookId" name="esBook" placeholder="Choose a book"
+                (onChange)="onBookChange($event.value)" />
+      @if (selectedBook(); as book) {
+        <span class="hint">{{ book.pageCount }} pages · {{ book.charCount | number }} characters of extracted text</span>
+      }
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="esTitle">Title</label>
+      <input pInputText id="esTitle" name="esTitle" [(ngModel)]="draft.title"
+             placeholder="e.g. Week 3 — Cell Division" />
+    </div>
+
+    <div class="field-grid">
+      <div class="field">
+        <label class="field-label" for="esFrom">From page</label>
+        <p-inputnumber inputId="esFrom" name="esFrom" [useGrouping]="false" [showButtons]="false"
+                       [min]="1" [max]="selectedBook()?.pageCount ?? 9999"
+                       [(ngModel)]="draft.pageFrom" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="esTo">To page</label>
+        <p-inputnumber inputId="esTo" name="esTo" [useGrouping]="false" [showButtons]="false"
+                       [min]="1" [max]="selectedBook()?.pageCount ?? 9999"
+                       [(ngModel)]="draft.pageTo" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="esDiff">Difficulty</label>
+        <p-select inputId="esDiff" [options]="difficulties" optionLabel="label" optionValue="value"
+                  [(ngModel)]="draft.difficulty" name="esDiff" />
+      </div>
+    </div>
+
+    @if (selectedBook() && !rangeIsValid()) {
+      <p-message severity="warn">The range has to run forwards and stay inside the book.</p-message>
+    } @else if (rangeTokens() > 0) {
+      <span class="hint">About {{ rangeTokens() | number }} tokens of source text will be sent to Gemini.</span>
+    }
+
+    <div class="field-grid">
+      <div class="field">
+        <label class="field-label" for="esMcq">Multiple choice</label>
+        <p-inputnumber inputId="esMcq" name="esMcq" [min]="0" [max]="20"
+                       [(ngModel)]="draft.mcqCount" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="esShort">Short answer</label>
+        <p-inputnumber inputId="esShort" name="esShort" [min]="0" [max]="10"
+                       [(ngModel)]="draft.shortCount" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="esForms">Forms</label>
+        <p-inputnumber inputId="esForms" name="esForms" [min]="minForms" [max]="maxForms"
+                       [(ngModel)]="draft.formCount" />
+      </div>
+    </div>
+    <span class="hint">
+      Each form gets the same {{ draft.mcqCount + draft.shortCount }} questions, but different wording and options,
+      so two students sitting the exam at the same time do not get the same paper.
+    </span>
+
+    <div class="field-grid">
+      <div class="field">
+        <label class="field-label" for="esTime">Time limit (minutes)</label>
+        <p-inputnumber inputId="esTime" name="esTime" [min]="0" [max]="300"
+                       [(ngModel)]="draft.timeLimitMinutes" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="esPass">Pass mark (%)</label>
+        <p-inputnumber inputId="esPass" name="esPass" [min]="0" [max]="100"
+                       [(ngModel)]="draft.passPercent" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="esWeek">Week (optional)</label>
+        <input pInputText id="esWeek" name="esWeek" [(ngModel)]="draft.weekLabel" placeholder="Week 3" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="esLesson">Lesson reference (optional)</label>
+      <input pInputText id="esLesson" name="esLesson" [(ngModel)]="draft.lessonRef"
+             placeholder="Link to a lesson in your plan" />
+    </div>
+
+    <div class="toggle-row">
+      <p-toggleswitch [(ngModel)]="draft.verifyOnGenerate" name="esVerify" inputId="esVerify" />
+      <label for="esVerify">Check every generated question against the source pages</label>
+    </div>
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showCreate.set(false)" />
+    <p-button label="Create" icon="pi pi-check" [loading]="creating()" (onClick)="submitCreate()" />
+  </ng-template>
+</p-dialog>
+
+<!-- Detail ------------------------------------------------------------------ -->
+<p-dialog [header]="detail()?.title ?? 'Exam set'" [modal]="true" [draggable]="false"
+          [style]="{ width: '68rem', maxWidth: '96vw' }" [maximizable]="true"
+          [visible]="showDetail()" (visibleChange)="showDetail.set($event)">
+  @if (detailLoading()) {
+    <div class="loading"><p-progressspinner strokeWidth="4" [style]="{ width: '2.2rem', height: '2.2rem' }" /></div>
+  } @else if (detail(); as set) {
+    <div class="detail-stack">
+      @if (detailError()) {
+        <p-message severity="error">{{ detailError() }}</p-message>
+      }
+      @if (success()) {
+        <p-message severity="success">{{ success() }}</p-message>
+      }
+
+      <div class="detail-meta">
+        <span><i class="pi pi-book"></i> {{ set.book?.title ?? 'Book' }}</span>
+        <span><i class="pi pi-file"></i> pages {{ set.pageFrom }}–{{ set.pageTo }}</span>
+        <span><i class="pi pi-flag"></i> {{ set.difficulty }}</span>
+        <span><i class="pi pi-percentage"></i> pass {{ set.passPercent }}%</span>
+        <p-tag [value]="set.status" [severity]="statusSeverity(set.status)" />
+      </div>
+
+      <!-- Blueprint -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3><i class="pi pi-map"></i> Step 1 — blueprint</h3>
+          <p-button [label]="blueprintDone() ? 'Re-read pages' : 'Read pages and map topics'"
+                    icon="pi pi-map" size="small" [loading]="step() === 'blueprint'"
+                    [disabled]="busy()" (onClick)="runBlueprint()" />
+        </div>
+        @if (set.blueprint; as bp) {
+          <p class="summary">{{ bp.summary }}</p>
+          <div class="chips">
+            @for (t of bp.topics; track t.topic) {
+              <span class="md-chip active" [pTooltip]="t.keywords.join('، ')">
+                <i class="pi pi-tag"></i> {{ t.topic }}
+                <span class="chip-count">{{ t.weight }}%</span>
+              </span>
+            }
+          </div>
+        } @else {
+          <p class="summary">The blueprint is what every form is held to: it lists the topics in the pages and
+            how much of the paper each one should get. Forms cannot be generated until it exists.</p>
+        }
+      </div>
+
+      <!-- Forms -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3><i class="pi pi-copy"></i> Step 2 — generate the forms</h3>
+          <div class="panel-actions">
+            <p-button label="Generate the rest" icon="pi pi-play" size="small" [outlined]="true"
+                      [loading]="step() === 'form'" [disabled]="busy() || !blueprintDone() || frozen() || missingFormCount() === 0"
+                      (onClick)="runAllForms()" />
+          </div>
+        </div>
+
+        <div class="tabs">
+          @for (label of set.formLabels; track label) {
+            <button type="button" class="tab" [class.active]="label === activeLabel()"
+                    (click)="activeLabel.set(label)">
+              Form {{ label }}
+              @if (formByLabel().get(label); as f) {
+                <i class="pi" [class.pi-verified]="f.reviewedAt"
+                   [class.pi-check-circle]="!f.reviewedAt && f.verifiedAt"
+                   [class.pi-exclamation-triangle]="!f.reviewedAt && flaggedIn(f) > 0"
+                   [class.pi-file]="!f.reviewedAt && !f.verifiedAt && flaggedIn(f) === 0"></i>
+              } @else {
+                <i class="pi pi-minus"></i>
+              }
+            </button>
+          }
+        </div>
+
+        @if (busy()) {
+          <div class="busy-strip">
+            <p-progressspinner strokeWidth="4" [style]="{ width: '1.4rem', height: '1.4rem' }" />
+            <span>{{ stepLabel() }}</span>
+          </div>
+        }
+
+        @if (diagnostics(); as d) {
+          <div class="diag">
+            <strong>Last generation:</strong>
+            <span>{{ d.rejected.length }} rejected</span>
+            <span>{{ d.duplicates }} duplicate{{ d.duplicates === 1 ? '' : 's' }} removed</span>
+            <span>{{ d.trimmed }} trimmed</span>
+            @if (d.repaired) { <span>{{ d.repaired }} repaired</span> }
+            @if (d.flagged) { <span>{{ d.flagged }} flagged</span> }
+            @if (d.rejected.length) {
+              <ul>
+                @for (r of d.rejected; track r.index) {
+                  <li>Q{{ r.index + 1 }}: {{ r.reason }}</li>
+                }
+              </ul>
+            }
+          </div>
+        }
+
+        @if (activeForm(); as form) {
+          <div class="form-head">
+            <div>
+              <strong>Form {{ form.formLabel }}</strong>
+              <span class="hint">· {{ form.questions.length }} questions · max grade {{ form.maxGrade }}</span>
+              @if (form.verifiedAt) {
+                <p-tag value="checked" severity="success" />
+              }
+              @if (form.reviewedAt) {
+                <p-tag value="reviewed" severity="success" icon="pi pi-verified"
+                       [pTooltip]="'Marked as read ' + (form.reviewedAt | date: 'medium')" />
+              }
+            </div>
+            <div class="panel-actions">
+              @if (form.reviewedAt) {
+                <p-button label="Undo review" icon="pi pi-undo" size="small" severity="secondary" [text]="true"
+                          [disabled]="frozen()" (onClick)="toggleReview(form)" />
+              } @else {
+                <p-button label="I have read this form" icon="pi pi-verified" size="small" [outlined]="true"
+                          [disabled]="frozen() || form.questions.length === 0"
+                          pTooltip="Publishing needs this on every form. A machine check is not a human one."
+                          (onClick)="toggleReview(form)" />
+              }
+              <p-button label="Check against source" icon="pi pi-shield" size="small" [outlined]="true"
+                        [loading]="step() === 'verify'" [disabled]="busy() || frozen()"
+                        (onClick)="runVerify()" />
+              <p-button label="Regenerate form" icon="pi pi-refresh" size="small" severity="secondary" [text]="true"
+                        [loading]="step() === 'form' && activeLabel() === form.formLabel" [disabled]="busy() || !blueprintDone() || frozen()"
+                        (onClick)="runForm(form.formLabel)" />
+            </div>
+          </div>
+
+          <p class="coverage" [class.gap]="form.coverage.missing.length > 0">
+            <i class="pi" [class.pi-check-circle]="form.coverage.missing.length === 0"
+               [class.pi-exclamation-triangle]="form.coverage.missing.length > 0"></i>
+            {{ coverageText(form.coverage) }}
+            @if (form.coverage.offMap.length) {
+              <span class="hint">· off-blueprint: {{ form.coverage.offMap.join('، ') }}</span>
+            }
+          </p>
+
+          <!-- Multiple choice -->
+          @if (mcqQuestions().length) {
+            <h4 class="section-title">Multiple choice</h4>
+            <div class="q-list">
+              @for (q of mcqQuestions(); track q._id; let i = $index) {
+                <div class="q-card" [class.flagged]="q.verify.status === 'flagged'">
+                  <div class="q-head">
+                    <span class="q-num">{{ i + 1 }}</span>
+                    <span class="q-text">{{ q.prompt }}</span>
+                    <p-tag [value]="verifyLabel(q.verify.status)" [severity]="statusSeverity(q.verify.status)" />
+                    @if (q.editedByTeacher) {
+                      <p-tag value="edited" severity="secondary" />
+                    }
+                    <p-button icon="pi pi-pencil" severity="secondary" [text]="true" size="small"
+                              [aria-label]="'Edit question ' + (i + 1)" (onClick)="toggleEdit(q)" />
+                    <p-button icon="pi pi-refresh" severity="secondary" [text]="true" size="small"
+                              [loading]="step() === 'question' && activeQuestionId() === q._id"
+                              [disabled]="busy()"
+                              pTooltip="Write a fresh question to replace this one"
+                              tooltipPosition="top"
+                              (onClick)="regenerate(q)" />
+                    <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small"
+                              aria-label="Delete question" (onClick)="removeQuestion(q)" />
+                  </div>
+
+                  <div class="opt-list">
+                    @for (o of q.options; track o.id) {
+                      <div class="opt" [class.correct]="o.id === q.correctOptionId">
+                        <i class="pi" [class.pi-check-circle]="o.id === q.correctOptionId"
+                           [class.pi-circle-fill]="o.id !== q.correctOptionId"></i>
+                        <span>{{ o.text }}</span>
+                        @if (o.id === q.correctOptionId) { <span class="tag">answer key</span> }
+                      </div>
+                    }
+                  </div>
+
+                  <div class="q-foot">
+                    @if (q.topic) { <span class="hint"><i class="pi pi-tag"></i> {{ q.topic }}</span> }
+                    @if (q.sourcePages.length) {
+                      <span class="hint"><i class="pi pi-file"></i> pages {{ q.sourcePages.join(', ') }}</span>
+                    }
+                    <span class="hint"><i class="pi pi-star"></i> {{ q.maxPoints }} pt</span>
+                    @if (q.verify.note) {
+                      <span class="hint" [class.warn]="q.verify.status === 'flagged'">
+                        <i class="pi pi-comment"></i> {{ q.verify.note }}
+                        @if (q.verify.issue !== 'none') { — {{ issueLabel(q.verify.issue) }} }
+                      </span>
+                    }
+                  </div>
+
+                  @if (q.explanation) {
+                    <div class="explanation">
+                      <i class="pi pi-lightbulb"></i> {{ q.explanation }}
+                    </div>
+                  }
+
+                  @if (editFor(q); as d) {
+                    <div class="editor">
+                      @if (d.error) { <p-message severity="error">{{ d.error }}</p-message> }
+                      <div class="field">
+                        <label class="field-label">Question text</label>
+                        <textarea pInputText rows="3" class="full"
+                                  [ngModel]="d.prompt" name="eq-{{ q._id }}"
+                                  (ngModelChange)="updateDraft(q, { prompt: $event })"></textarea>
+                      </div>
+
+                      <div class="field">
+                        <label class="field-label">Options — tick the correct one</label>
+                        <div class="opt-list">
+                          @for (o of d.options; track o.id; let oi = $index) {
+                            <div class="opt" [class.correct]="o.id === d.correctOptionId">
+                              <input type="radio" class="opt-radio" [name]="'eqk-' + q._id" [value]="o.id"
+                                     [checked]="o.id === d.correctOptionId" (change)="markCorrect(q, o.id)"
+                                     [attr.aria-label]="'Mark option ' + (oi + 1) + ' correct'" />
+                              <input pInputText class="opt-input" [ngModel]="o.text" name="eqo-{{ q._id }}-{{ oi }}"
+                                     (ngModelChange)="setOptionText(q, oi, $event)" />
+                              <p-button icon="pi pi-arrow-up" severity="secondary" [text]="true" size="small"
+                                        aria-label="Move option up" [disabled]="oi === 0"
+                                        (onClick)="moveOption(q, oi, -1)" />
+                              <p-button icon="pi pi-arrow-down" severity="secondary" [text]="true" size="small"
+                                        aria-label="Move option down" [disabled]="oi === d.options.length - 1"
+                                        (onClick)="moveOption(q, oi, 1)" />
+                            </div>
+                          }
+                        </div>
+                        <span class="hint">Options keep their id when moved, so the answer key follows the option,
+                          not the position.</span>
+                      </div>
+
+                      <div class="field-grid">
+                        <div class="field">
+                          <label class="field-label">Topic</label>
+                          <input pInputText [ngModel]="d.topic" name="eqt-{{ q._id }}"
+                                 (ngModelChange)="updateDraft(q, { topic: $event })" />
+                        </div>
+                        <div class="field">
+                          <label class="field-label">Source pages</label>
+                          <input pInputText [ngModel]="d.sourcePages" name="eqp-{{ q._id }}"
+                                 (ngModelChange)="updateDraft(q, { sourcePages: $event })" />
+                        </div>
+                        <div class="field">
+                          <label class="field-label">Points</label>
+                          <p-inputnumber [useGrouping]="false" [min]="1" [max]="maxPoints" [showButtons]="false"
+                                         [ngModel]="d.maxPoints" name="eqm-{{ q._id }}"
+                                         (ngModelChange)="updateDraft(q, { maxPoints: $event })" />
+                        </div>
+                      </div>
+
+                      <div class="field">
+                        <label class="field-label">Explanation for the student</label>
+                        <textarea pInputText rows="2" class="full" [ngModel]="d.explanation" name="eqe-{{ q._id }}"
+                                  (ngModelChange)="updateDraft(q, { explanation: $event })"></textarea>
+                      </div>
+
+                      <div class="editor-actions">
+                        <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="toggleEdit(q)" />
+                        <p-button label="Save question" icon="pi pi-check" [loading]="d.saving" (onClick)="saveQuestion(q)" />
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Short answer -->
+          @if (shortQuestions().length) {
+            <h4 class="section-title">Short answer</h4>
+            <div class="q-list">
+              @for (q of shortQuestions(); track q._id; let i = $index) {
+                <div class="q-card" [class.flagged]="q.verify.status === 'flagged'">
+                  <div class="q-head">
+                    <span class="q-num">S{{ i + 1 }}</span>
+                    <span class="q-text">{{ q.prompt }}</span>
+                    <p-tag [value]="verifyLabel(q.verify.status)" [severity]="statusSeverity(q.verify.status)" />
+                    @if (q.editedByTeacher) { <p-tag value="edited" severity="secondary" /> }
+                    <p-button icon="pi pi-pencil" severity="secondary" [text]="true" size="small"
+                              [aria-label]="'Edit question ' + (i + 1)" (onClick)="toggleEdit(q)" />
+                    <p-button icon="pi pi-refresh" severity="secondary" [text]="true" size="small"
+                              [loading]="step() === 'question' && activeQuestionId() === q._id"
+                              [disabled]="busy()"
+                              (onClick)="regenerate(q)" />
+                    <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small"
+                              aria-label="Delete question" (onClick)="removeQuestion(q)" />
+                  </div>
+
+                  @if (q.modelAnswer) {
+                    <div class="answer-box">
+                      <strong>Model answer</strong>
+                      <span>{{ q.modelAnswer }}</span>
+                    </div>
+                  }
+                  @if (q.rubric.length) {
+                    <ul class="rubric">
+                      @for (r of q.rubric; track r) {
+                        <li>{{ r }}</li>
+                      }
+                    </ul>
+                  }
+
+                  <div class="q-foot">
+                    @if (q.topic) { <span class="hint"><i class="pi pi-tag"></i> {{ q.topic }}</span> }
+                    @if (q.sourcePages.length) {
+                      <span class="hint"><i class="pi pi-file"></i> pages {{ q.sourcePages.join(', ') }}</span>
+                    }
+                    <span class="hint"><i class="pi pi-star"></i> {{ q.maxPoints }} pt</span>
+                    @if (q.verify.note) {
+                      <span class="hint" [class.warn]="q.verify.status === 'flagged'">
+                        <i class="pi pi-comment"></i> {{ q.verify.note }}
+                        @if (q.verify.issue !== 'none') { — {{ issueLabel(q.verify.issue) }} }
+                      </span>
+                    }
+                  </div>
+
+                  @if (q.explanation) {
+                    <div class="explanation"><i class="pi pi-lightbulb"></i> {{ q.explanation }}</div>
+                  }
+
+                  @if (editFor(q); as d) {
+                    <div class="editor">
+                      @if (d.error) { <p-message severity="error">{{ d.error }}</p-message> }
+                      <div class="field">
+                        <label class="field-label">Question text</label>
+                        <textarea pInputText rows="3" class="full" [ngModel]="d.prompt" name="esq-{{ q._id }}"
+                                  (ngModelChange)="updateDraft(q, { prompt: $event })"></textarea>
+                      </div>
+                      <div class="field">
+                        <label class="field-label">Model answer — one per line</label>
+                        <textarea pInputText rows="3" class="full" [ngModel]="d.modelAnswer" name="esm-{{ q._id }}"
+                                  (ngModelChange)="updateDraft(q, { modelAnswer: $event })"></textarea>
+                      </div>
+                      <div class="field">
+                        <label class="field-label">Rubric — one mark per line</label>
+                        <textarea pInputText rows="4" class="full" [ngModel]="d.rubric" name="esr-{{ q._id }}"
+                                  (ngModelChange)="updateDraft(q, { rubric: $event })"></textarea>
+                      </div>
+                      <div class="field-grid">
+                        <div class="field">
+                          <label class="field-label">Topic</label>
+                          <input pInputText [ngModel]="d.topic" name="est-{{ q._id }}"
+                                 (ngModelChange)="updateDraft(q, { topic: $event })" />
+                        </div>
+                        <div class="field">
+                          <label class="field-label">Source pages</label>
+                          <input pInputText [ngModel]="d.sourcePages" name="esp-{{ q._id }}"
+                                 (ngModelChange)="updateDraft(q, { sourcePages: $event })" />
+                          <span class="hint">Only pages {{ set.pageFrom }}–{{ set.pageTo }} are kept.</span>
+                        </div>
+                        <div class="field">
+                          <label class="field-label">Points</label>
+                          <p-inputnumber [useGrouping]="false" [min]="1" [max]="maxPoints" [showButtons]="false"
+                                         [ngModel]="d.maxPoints" name="esm-{{ q._id }}"
+                                         (ngModelChange)="updateDraft(q, { maxPoints: $event })" />
+                        </div>
+                      </div>
+                      <div class="field">
+                        <label class="field-label">Explanation for the student</label>
+                        <textarea pInputText rows="2" class="full" [ngModel]="d.explanation" name="ese-{{ q._id }}"
+                                  (ngModelChange)="updateDraft(q, { explanation: $event })"></textarea>
+                      </div>
+                      <div class="editor-actions">
+                        <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="toggleEdit(q)" />
+                        <p-button label="Save question" icon="pi pi-check" [loading]="d.saving" (onClick)="saveQuestion(q)" />
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        } @else {
+          <div class="empty">
+            <i class="pi pi-copy"></i>
+            <h3>Form {{ activeLabel() }} has not been generated</h3>
+            <p>Each form is built in its own request so a slow or failed generation never loses the others.</p>
+            <p-button [label]="blueprintDone() ? 'Generate form ' + activeLabel() : 'Run the blueprint first'"
+                      icon="pi pi-play" [loading]="step() === 'form'" [disabled]="busy() || !blueprintDone() || frozen()"
+                      (onClick)="runForm(activeLabel())" />
+          </div>
+        }
+      </div>
+
+      <!-- Publish -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3><i class="pi pi-send"></i> Step 3 — publish and deal the papers</h3>
+          <div class="panel-actions">
+            @if (isPublished()) {
+              <p-button label="Unpublish" icon="pi pi-eye-slash" size="small" severity="warn" [outlined]="true"
+                        [disabled]="busy()" (onClick)="changeStatus('draft')" />
+              <p-button label="Close exam" icon="pi pi-lock" size="small" severity="secondary" [outlined]="true"
+                        [disabled]="busy()" (onClick)="changeStatus('closed')" />
+            } @else {
+              <p-button [label]="set.status === 'closed' ? 'Reopen as draft' : 'Publish and deal papers'"
+                        icon="pi pi-send" size="small" [disabled]="set.status === 'closed'"
+                        (onClick)="openPublish()" />
+            }
+            @if (!isPublished() && set.status !== 'closed') {
+              <p-button label="Delete exam set" icon="pi pi-trash" size="small" severity="danger" [text]="true"
+                        aria-label="Delete exam set" (onClick)="removeSet(set)" />
+            }
+          </div>
+        </div>
+
+        <p class="summary">
+          Publishing deals one paper to each student, spread as evenly as the forms allow, so
+          {{ set.formCount }} students sitting the same set are not holding the same paper.
+          A paper can only go out once a teacher has read it — the machine check is not the review.
+        </p>
+
+        <div class="checklist">
+          <div class="check" [class.done]="blueprintDone()">
+            <i class="pi" [class.pi-check-circle]="blueprintDone()" [class.pi-circle]="!blueprintDone()"></i>
+            <span>Blueprint covers the page range</span>
+          </div>
+          <div class="check" [class.done]="formsComplete()">
+            <i class="pi" [class.pi-check-circle]="formsComplete()" [class.pi-circle]="!formsComplete()"></i>
+            <span>All {{ set.formLabels.length }} forms generated with {{ set.mcqCount + set.shortCount }} questions each</span>
+          </div>
+          <div class="check" [class.done]="formsReviewed()">
+            <i class="pi" [class.pi-verified]="formsReviewed()" [class.pi-circle]="!formsReviewed()"></i>
+            <span>Read and marked: {{ reviewedCount() }} of {{ set.formLabels.length }} forms</span>
+          </div>
+        </div>
+
+        @if (blockersToShow().length > 0) {
+          <ul class="blockers">
+            @for (b of blockersToShow(); track b.label + b.reason) {
+              <li><i class="pi pi-times-circle"></i> <strong>{{ b.label }}</strong> — {{ b.reason }}</li>
+            }
+          </ul>
+        } @else {
+          <p class="summary ready"><i class="pi pi-check-circle"></i> Ready to publish.</p>
+        }
+
+        @if (isPublished()) {
+          <p class="summary">
+            Published @if (set.publishedAt) { {{ set.publishedAt | date: 'medium' }} } @else { recently },
+            and open to students @if (set.openUntil) { until {{ set.openUntil | date: 'medium' }} } @else { with no closing date }.
+            Questions are frozen until you unpublish it.
+          </p>
+        }
+
+        <!-- Who has which paper -->
+        <div class="roster-head">
+          <h4><i class="pi pi-users"></i> Paper roster</h4>
+          <p-button label="Refresh" icon="pi pi-refresh" size="small" severity="secondary" [text]="true"
+                    [loading]="rosterLoading()" (onClick)="loadRoster()" />
+        </div>
+
+        @if (rosterLoading() && !roster()) {
+          <div class="loading"><p-progressspinner strokeWidth="4" [style]="{ width: '1.6rem', height: '1.6rem' }" /></div>
+        } @else if (roster(); as r) {
+          @if (r.forms.length > 0) {
+            <div class="chips">
+              @for (f of r.forms; track f.formLabel) {
+                <span class="md-chip active">
+                  <i class="pi pi-file"></i> Form {{ f.formLabel }}
+                  <span class="chip-count">{{ f.students }}</span>
+                </span>
+              }
+            </div>
+          }
+          @if (r.rows.length === 0) {
+            <p class="summary">No students on the roster yet.</p>
+          } @else {
+            <table class="roster">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  @for (label of r.formLabels; track label) { <th class="num">Form {{ label }}</th> }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of r.rows; track row.studentId) {
+                  <tr [class.inactive]="!row.active">
+                    <td>
+                      {{ row.name }}
+                      @if (!row.active) { <p-tag value="inactive" severity="warn" /> }
+                      @if (row.source === 'teacher') {
+                        <p-tag value="moved" severity="info" icon="pi pi-user-edit"
+                               pTooltip="A teacher moved this student by hand. Re-publishing will not undo it." />
+                      }
+                    </td>
+                    @for (label of r.formLabels; track label) {
+                      <td class="num">
+                        @if (row.formLabel === label) {
+                          <i class="pi pi-check-circle on-form"></i>
+                        } @else {
+                          <span class="off">·</span>
+                        }
+                      </td>
+                    }
+                  </tr>
+                  <tr class="move-row">
+                    <td [attr.colspan]="r.formLabels.length + 1">
+                      <span class="hint">
+                        @if (row.formLabel) { Form {{ row.formLabel }} } @else { Not dealt a paper }
+                        @if (!row.active) { · account deactivated, skipped } @else {
+                          · move to:
+                          @for (label of r.formLabels; track label) {
+                            <button type="button" class="mini" [class.current]="row.formLabel === label"
+                                    [disabled]="row.formLabel === label || movingStudentId() === row.studentId || !row.active"
+                                    (click)="moveStudent(row, label)">
+                              {{ label }}
+                            </button>
+                          }
+                        }
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        } @else {
+          <p class="summary">Open the publish dialog to see who has been dealt which paper.</p>
+        }
+      </div>
+
+      <!-- Results -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3><i class="pi pi-chart-bar"></i> Step 4 — marks and marking</h3>
+          <div class="panel-actions">
+            <p-button label="Refresh" icon="pi pi-refresh" size="small" severity="secondary" [text]="true"
+                      [loading]="resultsLoading()" (onClick)="loadResults()" />
+          </div>
+        </div>
+
+        <p class="summary">
+          One row per student, newest sitting first — a paper of {{ set.mcqCount + set.shortCount }} questions
+          will not fit on a phone, so the written answers the model was unsure about come back as a queue
+          below, each one carrying the student's text, the model's mark and the mark scheme to judge it by.
+          A hand-set mark is the last word: it replaces the model's, and clearing it hands the answer back.
+          Full export is on the Reports page.
+        </p>
+
+        @if (resultsError()) {
+          <p-message class="msg" severity="error">{{ resultsError() }}</p-message>
+        }
+
+        @if (resultsLoading() && !results()) {
+          <div class="loading"><p-progressspinner strokeWidth="4" [style]="{ width: '1.6rem', height: '1.6rem' }" /></div>
+        } @else if (results(); as r) {
+          <div class="chips">
+            <span class="md-chip active">
+              <i class="pi pi-users"></i> {{ r.rows.length }} student{{ r.rows.length === 1 ? '' : 's' }}
+              <span class="chip-count">{{ resultsSummary().submitted }} in</span>
+            </span>
+            <span class="md-chip muted">
+              <i class="pi pi-pencil"></i> Still writing
+              <span class="chip-count">{{ resultsSummary().stillGoing }}</span>
+            </span>
+            <span class="md-chip muted">
+              <i class="pi pi-clock"></i> Not started
+              <span class="chip-count">{{ resultsSummary().notStarted }}</span>
+            </span>
+            <span class="md-chip" [class.attention]="r.pending.length > 0">
+              <i class="pi pi-user-edit"></i> Waiting on you
+              <span class="chip-count">{{ r.pending.length }}</span>
+            </span>
+          </div>
+
+          <!-- One average per paper: a form that came out unfairly hard shows up here -->
+          @if (r.forms.length > 0) {
+            <table class="roster">
+              <thead>
+                <tr>
+                  <th>Paper</th>
+                  <th class="num">Worth</th>
+                  <th class="num">Sat</th>
+                  <th class="num">Average</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (f of r.forms; track f.formId) {
+                  <tr>
+                    <td>Form {{ f.formLabel }}</td>
+                    <td class="num">{{ f.maxGrade }}</td>
+                    <td class="num">{{ f.sat }}</td>
+                    <td class="num" [class.low]="f.sat > 0 && f.averagePercent < r.passPercent">
+                      {{ f.sat > 0 ? (f.averagePercent | number: '1.0-1') + '%' : '—' }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+
+          <div class="roster-head">
+            <h4><i class="pi pi-list-check"></i> The class</h4>
+            <span class="hint">Pass mark {{ r.passPercent }}% · up to {{ r.maxAttempts }} sitting{{ r.maxAttempts === 1 ? '' : 's' }}</span>
+          </div>
+
+          @if (r.rows.length === 0) {
+            <p class="summary">No students on the roster yet.</p>
+          } @else {
+            <table class="roster">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Paper</th>
+                  <th>Status</th>
+                  <th class="num">Score</th>
+                  <th class="num">Mark</th>
+                  <th class="num">Best</th>
+                  <th>Handed in</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of r.rows; track row.studentId) {
+                  <tr [class.inactive]="!row.active" [class.needs-review]="row.needsReview">
+                    <td>
+                      {{ row.name }}
+                      @if (!row.active) { <p-tag value="inactive" severity="warn" /> }
+                      @if (row.needsReview) {
+                        <p-tag value="needs a human" severity="warn" icon="pi pi-user-edit"
+                               pTooltip="At least one written answer is still waiting for you." />
+                      }
+                    </td>
+                    <td>{{ row.formLabel ? 'Form ' + row.formLabel : '—' }}</td>
+                    <td>
+                      <p-tag [value]="attemptStatusLabel(row.status)" [severity]="attemptStatusSeverity(row.status)" />
+                      @if (row.sittings > 1) { <span class="hint"> sitting {{ row.sittings }}</span> }
+                    </td>
+                    <td class="num">
+                      @if (row.maxGrade > 0) { {{ row.totalScore | number: '1.0-0' }} / {{ row.maxGrade | number: '1.0-0' }} }
+                      @else { <span class="off">·</span> }
+                    </td>
+                    <td class="num" [class]="markSeverity(row)">
+                      @if (row.status === 'graded') { {{ row.percent | number: '1.0-0' }}% }
+                      @else { <span class="off">·</span> }
+                    </td>
+                    <td class="num">
+                      @if (row.bestPercent > 0) { {{ row.bestPercent | number: '1.0-0' }}% }
+                      @else { <span class="off">·</span> }
+                    </td>
+                    <td class="dim">{{ row.submittedAt ? (row.submittedAt | date: 'short') : '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+
+          <!-- The queue: everything the model would not commit to -->
+          <div class="roster-head">
+            <h4><i class="pi pi-inbox"></i> Waiting on you ({{ r.pending.length }})</h4>
+            <span class="hint">Lowest confidence and fewest marks first</span>
+          </div>
+
+          @if (r.pending.length === 0) {
+            <p class="summary ready"><i class="pi pi-check-circle"></i>
+              Nothing waiting — every written answer has a mark you are happy with.
+            </p>
+          } @else {
+            <div class="queue">
+              @for (item of r.pending; track markKey(item)) {
+                <div class="queue-card">
+                  <div class="queue-head">
+                    <span class="queue-who">
+                      <strong>{{ item.studentName }}</strong>
+                      <span class="hint">Form {{ item.formLabel }}</span>
+                    </span>
+                    <span class="queue-mark">
+                      <p-tag [value]="'model ' + (item.aiScore ?? 0) + ' / ' + item.aiMax"
+                             [severity]="confidenceSeverity(item.aiConfidence)" />
+                      <p-tag [value]="confidenceLabel(item.aiConfidence)" [severity]="confidenceSeverity(item.aiConfidence)" />
+                    </span>
+                  </div>
+
+                  <p class="q-text" dir="rtl" lang="ar">{{ item.prompt }}</p>
+
+                  <div class="answer-box" dir="rtl" lang="ar">
+                    <strong>Student wrote</strong>
+                    {{ item.textAnswer || '(nothing written)' }}
+                  </div>
+
+                  @if (item.aiFeedback) {
+                    <div class="explanation">
+                      <i class="pi pi-sparkles"></i> {{ item.aiFeedback }}
+                    </div>
+                  }
+
+                  <details class="scheme">
+                    <summary><i class="pi pi-list"></i> Mark scheme — model answer and rubric</summary>
+                    <div class="answer-box" dir="rtl" lang="ar">
+                      <strong>Model answer</strong>
+                      {{ item.modelAnswer || '(none recorded)' }}
+                    </div>
+                    @if (item.rubric.length > 0) {
+                      <ul class="rubric">
+                        @for (point of item.rubric; track point) { <li>{{ point }}</li> }
+                      </ul>
+                    }
+                  </details>
+
+                  @if (markFor(item); as mark) {
+                    <div class="editor">
+                      @if (mark.error) { <p-message severity="error">{{ mark.error }}</p-message> }
+                      <label class="field">
+                        <span class="field-label">Your mark (worth {{ item.maxPoints }})</span>
+                        <p-inputnumber [ngModel]="mark.score" (ngModelChange)="patchMark(item, { score: $event })"
+                                       [min]="0" [max]="item.maxPoints" [showButtons]="true" [minFractionDigits]="0" [maxFractionDigits]="2" />
+                      </label>
+                      <label class="field">
+                        <span class="field-label">Note for the student <small>(optional)</small></span>
+                        <textarea pInputText rows="2" [ngModel]="mark.feedback"
+                                  (ngModelChange)="patchMark(item, { feedback: $event })"></textarea>
+                      </label>
+                      <div class="editor-actions">
+                        <p-button label="Cancel" severity="secondary" [text]="true"
+                                  [disabled]="mark.saving" (onClick)="cancelMark(item)" />
+                        <p-button label="Save mark" icon="pi pi-check" [loading]="mark.saving" (onClick)="saveMark(item)" />
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="q-foot">
+                      <p-button label="Mark this answer" icon="pi pi-user-edit" size="small"
+                                [outlined]="true" (onClick)="openMark(item)" />
+                      @if (item.aiScore) {
+                        <p-button label="Hand back to the model" icon="pi pi-undo" size="small" severity="secondary"
+                                  [text]="true" (onClick)="clearMark(item)" />
+                      }
+                      @if (item.submittedAt) {
+                        <span class="hint">handed in {{ item.submittedAt | date: 'short' }}</span>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        } @else {
+          <div class="empty">
+            <i class="pi pi-chart-bar"></i>
+            <h3>No marks yet</h3>
+            <p>
+              @if (set.status === 'draft') {
+                Publish the set first — until then no student can hand anything in.
+              } @else {
+                Nobody has sat this paper yet. Load the results again once they have.
+              }
+            </p>
+            <p-button label="Load results" icon="pi pi-refresh" [outlined]="true"
+                      [disabled]="set.status === 'draft'" (onClick)="loadResults()" />
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Publish dialog -->
+  <p-dialog header="Publish exam set" [modal]="true" [draggable]="false"
+            [style]="{ width: '34rem', maxWidth: '94vw' }"
+            [visible]="showPublish()" (visibleChange)="showPublish.set($event)">
+    @if (detail(); as set) {
+      <div class="publish-stack">
+        @if (publishError()) {
+          <p-message severity="error">{{ publishError() }}</p-message>
+        }
+        <p class="summary">
+          {{ set.formCount }} forms for {{ set.mcqCount + set.shortCount }} questions each, dealt one
+          paper per student. Publishing twice is safe: existing papers are kept and only missing
+          students are dealt into them.
+        </p>
+
+        @if (blockers().length > 0) {
+          <ul class="blockers">
+            @for (b of blockers(); track b.label + b.reason) {
+              <li><i class="pi pi-times-circle"></i> <strong>{{ b.label }}</strong> — {{ b.reason }}</li>
+            }
+          </ul>
+        } @else if (localBlockers().length > 0) {
+          <ul class="blockers">
+            @for (b of localBlockers(); track b.label + b.reason) {
+              <li><i class="pi pi-times-circle"></i> <strong>{{ b.label }}</strong> — {{ b.reason }}</li>
+            }
+          </ul>
+        }
+
+        <label class="field">
+          <span>Close the exam on <small>(optional — leave empty for no end date)</small></span>
+          <input pInputText type="datetime-local" [ngModel]="publishOpenUntil()" name="publishOpenUntil"
+                 (ngModelChange)="publishOpenUntil.set($event)" />
+        </label>
+
+        <div class="editor-actions">
+          <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showPublish.set(false)" />
+          <p-button label="Publish and deal papers" icon="pi pi-send" [loading]="publishing()"
+                    [disabled]="!canPublish()" (onClick)="publish()" />
+        </div>
+      </div>
+    }
+  </p-dialog>
+
+  <ng-template #footer>
+    <p-button label="Close" severity="secondary" [text]="true" (onClick)="showDetail.set(false)" />
+    <p-button label="Refresh" icon="pi pi-refresh" severity="secondary" [outlined]="true"
+              [loading]="detailLoading()" (onClick)="reloadDetail()" />
+  </ng-template>
+</p-dialog>

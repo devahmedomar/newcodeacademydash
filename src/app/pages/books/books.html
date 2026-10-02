@@ -1,0 +1,291 @@
+<div class="page-header">
+  <div>
+    <div class="title-row">
+      <h1 class="page-title">Books</h1>
+      <span class="title-badge"><i class="pi pi-book"></i> {{ books().length }} uploaded</span>
+    </div>
+    <p class="page-subtitle">
+      Upload a textbook PDF once. The text is extracted and kept — the PDF itself is never stored.
+    </p>
+  </div>
+  <p-button label="Upload book" icon="pi pi-upload" (onClick)="openAdd()" />
+</div>
+
+@if (success()) {
+  <p-message severity="success" class="w-full mb-4">{{ success() }}</p-message>
+}
+@if (error()) {
+  <p-message severity="error" class="w-full mb-4">{{ error() }}</p-message>
+}
+
+@if (loading()) {
+  <div class="state"><i class="pi pi-spin pi-spinner"></i><span>Loading books…</span></div>
+} @else {
+  <div class="stat-grid">
+    <p-card class="stat-card">
+      <div class="stat-row">
+        <span class="stat-icon icon-primary"><i class="pi pi-book"></i></span>
+        <div>
+          <span class="stat-label">Books</span>
+          <strong class="stat-value">{{ books().length }}</strong>
+        </div>
+      </div>
+    </p-card>
+    <p-card class="stat-card">
+      <div class="stat-row">
+        <span class="stat-icon icon-green"><i class="pi pi-check-circle"></i></span>
+        <div>
+          <span class="stat-label">Ready</span>
+          <strong class="stat-value">{{ readyCount() }}</strong>
+        </div>
+      </div>
+    </p-card>
+    <p-card class="stat-card">
+      <div class="stat-row">
+        <span class="stat-icon icon-amber"><i class="pi pi-clock"></i></span>
+        <div>
+          <span class="stat-label">In progress</span>
+          <strong class="stat-value">{{ pendingCount() }}</strong>
+        </div>
+      </div>
+    </p-card>
+    <p-card class="stat-card">
+      <div class="stat-row">
+        <span class="stat-icon icon-blue"><i class="pi pi-file"></i></span>
+        <div>
+          <span class="stat-label">Total pages</span>
+          <strong class="stat-value">{{ totalPages() | number }}</strong>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  @if (ocrCount() > 0) {
+    <div class="ocr-note">
+      <i class="pi pi-sparkles"></i>
+      <span
+        >{{ ocrCount() }} book(s) had no text layer and were transcribed by AI. Expect higher AI
+        cost for these.</span
+      >
+    </div>
+  }
+
+  @if (books().length === 0) {
+    <div class="empty">
+      <i class="pi pi-book"></i>
+      <h3>No books yet</h3>
+      <p>Upload the textbook PDF and its text will be extracted so exams can be generated from it.</p>
+      <p-button label="Upload book" icon="pi pi-upload" (onClick)="openAdd()" />
+    </div>
+  } @else {
+    <div class="book-list">
+      @for (b of books(); track trackById($index, b)) {
+        <div class="book-row">
+          <span class="book-icon"><i class="pi pi-file-pdf"></i></span>
+          <div class="book-info">
+            <div class="book-title-line">
+              <strong class="book-title">{{ b.title }}</strong>
+              <p-tag [value]="statusLabel(b.status)" [severity]="statusSeverity(b.status)" />
+              @if (b.ocrUsed) {
+                <span class="ocr-badge"><i class="pi pi-sparkles"></i> AI transcribed</span>
+              }
+            </div>
+            <div class="book-meta">
+              <span><i class="pi pi-file"></i> {{ b.originalFileName }}</span>
+              <span class="meta-sep"></span>
+              <span><i class="pi pi-copy"></i> {{ b.pageCount }} pages</span>
+              <span class="meta-sep"></span>
+              <span><i class="pi pi-align-left"></i> {{ b.charCount | number }} chars</span>
+              <span class="meta-sep"></span>
+              <span><i class="pi pi-database"></i> {{ formatSize(b.sizeBytes) }}</span>
+              <span class="meta-sep"></span>
+              <span><i class="pi pi-calendar"></i> {{ b.createdAt | date: 'mediumDate' }}</span>
+            </div>
+            @if (b.status === 'failed' && b.failureReason) {
+              <div class="book-error">{{ b.failureReason }}</div>
+            }
+            @if (b.status === 'needs_transcription') {
+              <div class="book-warn">
+                No text layer found. Re-attach the same PDF to read it with AI.
+              </div>
+            }
+          </div>
+          <div class="book-actions">
+            <p-button
+              label="Pages"
+              icon="pi pi-eye"
+              [outlined]="true"
+              size="small"
+              (onClick)="openPages(b)"
+            />
+            @if (b.status === 'needs_transcription') {
+              <input
+                #retryInput
+                type="file"
+                accept="application/pdf,.pdf"
+                (change)="onRetryPick(b, $event)"
+                hidden
+              />
+              <p-button
+                label="Transcribe"
+                icon="pi pi-sparkles"
+                size="small"
+                [loading]="busy()"
+                (onClick)="retryInput.click()"
+              />
+            }
+            <p-button
+              icon="pi pi-trash"
+              severity="danger"
+              [outlined]="true"
+              size="small"
+              (onClick)="deleteBook(b)"
+            />
+          </div>
+        </div>
+      }
+    </div>
+  }
+}
+
+<!-- Upload dialog -->
+<p-dialog
+  header="Upload a book"
+  [modal]="true"
+  [visible]="showAdd()"
+  (visibleChange)="!$event && showAdd.set(false)"
+  [style]="{ width: '38rem', maxWidth: '95vw' }"
+>
+  <div class="form-stack">
+    <label class="field">
+      <span class="field-label">Book title</span>
+      <input pInputText [(ngModel)]="title" placeholder="e.g. Mathematics — Grade 1" />
+    </label>
+
+    <div
+      class="dropzone"
+      [class.drag]="dragging()"
+      (dragover)="$event.preventDefault(); dragging.set(true)"
+      (dragleave)="dragging.set(false)"
+      (drop)="onDrop($event)"
+    >
+      @if (file) {
+        <i class="pi pi-file-pdf dz-icon has-file"></i>
+        <div class="dz-name">{{ file.name }}</div>
+        <div class="dz-size">{{ formatSize(file.size) }}</div>
+        <button type="button" class="dz-clear" (click)="file = null">Choose a different file</button>
+      } @else {
+        <i class="pi pi-cloud-upload dz-icon"></i>
+        <div class="dz-name">Drop a PDF here</div>
+        <div class="dz-size">or click to browse — up to {{ 80 }} MB</div>
+      }
+      <input type="file" accept="application/pdf,.pdf" (change)="onPick($event)" hidden #fileInput />
+      <p-button
+        label="Browse"
+        icon="pi pi-folder-open"
+        [outlined]="true"
+        size="small"
+        (onClick)="fileInput.click()"
+      />
+    </div>
+
+    @if (needsTranscriptionNote()) {
+      <p-message severity="warn" class="w-full">{{ needsTranscriptionNote() }}</p-message>
+    }
+
+    @if (stage() === 'uploading' || stage() === 'extracting' || stage() === 'transcribing') {
+      <div class="progress-block">
+        <div class="progress-label">{{ stageLabel() }}</div>
+        @if (stage() === 'uploading') {
+          <p-progressbar [value]="uploadProgress() * 100" [showValue]="false" />
+        }
+        @if (stage() === 'transcribing') {
+          <p-progressbar [value]="transcribeProgress() * 100" [showValue]="false" />
+          @if (unreadableCount() > 0) {
+            <div class="progress-note">{{ unreadableCount() }} page(s) had no readable text</div>
+          }
+        }
+        @if (stage() === 'extracting') {
+          <p-progressbar mode="indeterminate" [showValue]="false" />
+        }
+      </div>
+    }
+
+    @if (error()) {
+      <p-message severity="error" class="w-full">{{ error() }}</p-message>
+    }
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" severity="secondary" (onClick)="showAdd.set(false)" />
+    <p-button
+      label="Upload and extract"
+      icon="pi pi-upload"
+      [loading]="busy()"
+      [disabled]="!file || !title.trim()"
+      (onClick)="submit()"
+    />
+  </ng-template>
+</p-dialog>
+
+<!-- Page preview dialog -->
+<p-dialog
+  header="Book text"
+  [modal]="true"
+  [visible]="showPages()"
+  (visibleChange)="!$event && showPages.set(false)"
+  [style]="{ width: '52rem', maxWidth: '95vw' }"
+>
+  @if (viewing(); as book) {
+    <div class="preview-head">
+      <strong>{{ book.title }}</strong>
+      <span class="preview-meta">
+        Pages {{ pageFrom() }}–{{ pageWindowEnd(book) }} of {{ book.pageCount }} · approx.
+        {{ rangeTokens(book) | number }} tokens for the whole book
+      </span>
+    </div>
+  }
+
+  @if (pagesLoading()) {
+    <div class="state"><i class="pi pi-spin pi-spinner"></i><span>Loading pages…</span></div>
+  } @else {
+    @for (p of pages(); track trackByPage($index, p)) {
+      <div class="page-card" [class.empty-page]="!p.text.trim()">
+        <div class="page-card-head">
+          <span class="page-num">Page {{ p.pageNumber }}</span>
+          <span class="page-stats">{{ p.charCount }} chars</span>
+          @if (p.transcribed) {
+            <span class="ocr-badge small"><i class="pi pi-sparkles"></i> AI</span>
+          }
+        </div>
+        @if (p.text.trim()) {
+          <div class="page-text" dir="rtl" lang="ar">{{ p.text }}</div>
+        } @else {
+          <div class="page-text muted">No text on this page.</div>
+        }
+      </div>
+    }
+  }
+
+  <ng-template #footer>
+    @if (viewing(); as book) {
+      <div class="pager">
+        <p-button
+          icon="pi pi-chevron-left"
+          [outlined]="true"
+          size="small"
+          [disabled]="pageFrom() <= 1"
+          (onClick)="prevPageWindow()"
+        />
+        <span class="pager-label">Page {{ pageFrom() }} of {{ book.pageCount }}</span>
+        <p-button
+          icon="pi pi-chevron-right"
+          [outlined]="true"
+          size="small"
+          [disabled]="pageWindowEnd(book) >= book.pageCount"
+          (onClick)="nextPageWindow()"
+        />
+      </div>
+    }
+  </ng-template>
+</p-dialog>

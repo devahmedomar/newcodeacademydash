@@ -11,6 +11,7 @@ import {
   PaymentWithStudent,
   HomeworkWithStudent,
   StudentProfile,
+  ResultRow,
 } from '../../models';
 
 interface SheetSpec {
@@ -26,6 +27,22 @@ interface ReportMeta {
   icon: string;
   tone: 'primary' | 'green' | 'amber' | 'blue' | 'purple' | 'cyan' | 'red';
   group: 'Finance' | 'Students' | 'Teaching';
+}
+
+/** A sitting the student actually handed in, whether or not the model graded it. */
+function isHandedIn(status: ResultRow['status']): boolean {
+  return status === 'graded' || status === 'submitted' || status === 'grading_failed';
+}
+
+function statusLabel(status: ResultRow['status']): string {
+  switch (status) {
+    case 'not_started': return 'Not started';
+    case 'draft': return 'In progress';
+    case 'submitted': return 'Submitted';
+    case 'graded': return 'Graded';
+    case 'grading_failed': return 'Grading failed';
+    default: return status;
+  }
 }
 
 @Component({
@@ -48,21 +65,24 @@ export class Reports {
     { id: 'student-performance', title: 'Student performance', desc: 'Per-student scores across exams, homework and quizzes, plus points and payment standing.', icon: 'pi-chart-bar', tone: 'purple', group: 'Students' },
     { id: 'revenue', title: 'Revenue & payments', desc: 'Every payment record with a monthly revenue summary — paid, unpaid and late amounts.', icon: 'pi-wallet', tone: 'green', group: 'Finance' },
     { id: 'exam-results', title: 'Exam results', desc: 'All exam grades, each exam on its own sheet, with a summary of averages and completion.', icon: 'pi-clipboard', tone: 'amber', group: 'Teaching' },
+    { id: 'ai-exam-results', title: 'Generated exam results', desc: 'Every generated exam set — a summary sheet, one sheet of student marks per set, and the answers still waiting for a teacher.', icon: 'pi-sparkles', tone: 'amber', group: 'Teaching' },
     { id: 'homework', title: 'Homework', desc: 'Every homework submission with points earned versus maximum.', icon: 'pi-bookmark', tone: 'cyan', group: 'Teaching' },
     { id: 'quiz-performance', title: 'Quiz performance', desc: 'Every quiz attempt per student — score, total, percentage and date taken.', icon: 'pi-list-check', tone: 'primary', group: 'Teaching' },
     { id: 'lesson-catalog', title: 'Lesson catalog', desc: 'All lessons by module — publish status, order and video links.', icon: 'pi-video', tone: 'red', group: 'Teaching' },
   ];
 
   async ngOnInit() {
-    const [students, lessons, exams, payments] = await Promise.allSettled([
+    const [students, lessons, exams, payments, aiSets] = await Promise.allSettled([
       this.data.listStudents(),
       this.data.listLessons(),
       this.data.listExamTemplates(),
       this.data.listPayments(),
+      this.data.listExamSets(),
     ]);
     if (students.status === 'fulfilled') this.counts['student-roster'] = students.value.length;
     if (students.status === 'fulfilled') this.counts['student-performance'] = students.value.length;
     if (exams.status === 'fulfilled') this.counts['exam-results'] = exams.value.length;
+    if (aiSets.status === 'fulfilled') this.counts['ai-exam-results'] = aiSets.value.length;
     if (lessons.status === 'fulfilled') this.counts['lesson-catalog'] = lessons.value.length;
     if (payments.status === 'fulfilled') this.counts['revenue'] = payments.value.length;
     this.loading.set(false);
@@ -80,6 +100,7 @@ export class Reports {
         case 'student-performance': sheets = await this.studentPerformance(); break;
         case 'revenue': sheets = await this.revenue(); break;
         case 'exam-results': sheets = await this.examResults(); break;
+        case 'ai-exam-results': sheets = await this.aiExamResults(); break;
         case 'homework': sheets = await this.homework(); break;
         case 'quiz-performance': sheets = await this.quizPerformance(); break;
         case 'lesson-catalog': sheets = await this.lessonCatalog(); break;
@@ -172,6 +193,120 @@ export class Reports {
       sheets.push({ name, headers: ['Student', 'Grade', 'Max grade', 'Percent (%)'], rows });
     }
     return sheets;
+  }
+
+  /**
+ * The generated exam sets, in three sheets: a summary row per set, every
+ * student's mark across every set, and every written answer still waiting on a
+ * teacher. That last sheet is the point of the export — it is the marking queue
+ * as a list somebody can work through in a spreadsheet, with the mark scheme
+ * next to each answer.
+ *
+ * Counts follow the exam-set screen: a hand-in is `graded`, `submitted` or
+ * `grading_failed`, and a draft is neither sat nor failed, so it is reported on
+ * its own line rather than being averaged in as a zero.
+ */
+private async aiExamResults(): Promise<SheetSpec[]> {
+    const sets = await this.data.listExamSets();
+    const summaryHeaders = [
+      'Exam set', 'Week', 'Status', 'Forms', 'Pass mark (%)', 'Handed in', 'Passed', 'Pass rate (%)',
+      'Average (%)', 'In progress', 'Not started', 'Grading failed', 'Answers to mark',
+    ];
+    const summaryRows: (string | number)[][] = [];
+    const markRows: (string | number)[][] = [];
+    const pendingRows: (string | number)[][] = [];
+
+    for (const set of sets) {
+      let results;
+      try {
+        results = await this.data.listSetResults(set._id);
+      } catch {
+        summaryRows.push([
+          set.title, set.weekLabel ?? '', set.status, set.formCount, set.passPercent,
+          '', '', '', '', '', '', 'Results could not be loaded',
+        ]);
+        continue;
+      }
+
+      const handedIn = results.rows.filter((r) => isHandedIn(r.status));
+      const passed = handedIn.filter((r) => r.percent >= results.passPercent).length;
+      summaryRows.push([
+        set.title,
+        set.weekLabel ?? '',
+        set.status,
+        set.formCount,
+        set.passPercent,
+        handedIn.length,
+        passed,
+        handedIn.length ? this.percent(passed, handedIn.length) : 0,
+        handedIn.length
+          ? Math.round(handedIn.reduce((a, r) => a + r.percent, 0) / handedIn.length)
+          : 0,
+        results.rows.filter((r) => r.status === 'draft').length,
+        results.rows.filter((r) => r.status === 'not_started').length,
+        handedIn.filter((r) => r.status === 'grading_failed').length,
+        results.pending.length,
+      ]);
+
+      for (const r of results.rows) {
+        markRows.push([set.title, ...this.aiMarkCells(r, results.passPercent)]);
+      }
+
+      for (const p of results.pending) {
+        pendingRows.push([
+          set.title,
+          p.studentName,
+          p.formLabel,
+          this.fmtDate(p.submittedAt ?? ''),
+          p.prompt,
+          p.textAnswer,
+          p.aiScore ?? '',
+          p.aiMax,
+          p.aiConfidence ?? '',
+          p.aiFeedback,
+          p.modelAnswer,
+          p.rubric.join('\n'),
+        ]);
+      }
+    }
+
+    return [
+      { name: 'Sets', headers: summaryHeaders, rows: summaryRows },
+      {
+        name: 'Marks',
+        headers: [
+          'Exam set', 'Student', 'Email', 'Active', 'Paper', 'Status', 'Sittings', 'Best (%)',
+          'Score', 'Max grade', 'Percent (%)', 'Result', 'Awaiting a teacher', 'Submitted',
+        ],
+        rows: markRows,
+      },
+      {
+        name: 'To mark',
+        headers: [
+          'Exam set', 'Student', 'Paper', 'Submitted', 'Question', 'Student answer',
+          'Model score', 'Max points', 'Model confidence', 'Model feedback', 'Model answer', 'Rubric',
+        ],
+        rows: pendingRows,
+      },
+    ];
+  }
+
+  private aiMarkCells(r: ResultRow, passPercent: number): (string | number)[] {
+    return [
+      r.name,
+      r.email,
+      r.active ? 'Yes' : 'No',
+      r.formLabel ?? '—',
+      statusLabel(r.status),
+      r.sittings,
+      r.bestPercent,
+      r.totalScore,
+      r.maxGrade,
+      r.percent,
+      isHandedIn(r.status) ? (r.percent >= passPercent ? 'Pass' : 'Fail') : '—',
+      r.needsReview ? 'Yes' : 'No',
+      r.submittedAt ? this.fmtDate(r.submittedAt) : '—',
+    ];
   }
 
   private async homework(): Promise<SheetSpec[]> {
